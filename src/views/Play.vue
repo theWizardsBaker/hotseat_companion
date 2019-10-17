@@ -2,6 +2,14 @@
   <div>
     <titlebar :name="name" :score="score">
     </titlebar>
+    
+    <score-board />
+    <div class="columns is-mobile">
+      <div class="column is-4-tablet">
+        <guess />
+      </div>
+    </div>
+    
     <div>
       <router-view/>
     </div>
@@ -10,13 +18,17 @@
 
 <script>
 import Titlebar from '@/components/Titlebar'
+import ScoreBoard from '@/components/ScoreBoard'
+import Guess from '@/components/Guess'
 
 export default {
 
   name: 'Play',
 
   components: {
-  	Titlebar
+  	Titlebar,
+    ScoreBoard,
+    Guess
   },
 
   data () {
