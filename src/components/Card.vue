@@ -20,7 +20,7 @@
 
 <script>
 export default {
-  name: 'playing-Card',
+  name: 'playing-dard',
   data () {
     return {
 

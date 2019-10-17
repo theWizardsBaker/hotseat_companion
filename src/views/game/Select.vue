@@ -9,7 +9,7 @@
   		</h4>
   		<loading v-if="gameSelected" />
 	  	<div class="columns is-mobile is-3 is-centered is-multiline" v-else>
-	  		<div class="column is-narrow-mobile is-narrow-tablet" :key="option.name" v-for="option in gameOptions">
+	  		<div class="column is-narrow-mobile is-narrow-tablet" :key="option" v-for="option in gameOptions">
 			  	<card>
 			  		<template #title>
 			  			{{option.name}}
@@ -73,36 +73,42 @@ export default {
       gameOptions: [
         {
           name: 'Create Game',
+          linkTo: 'create',
           action: 'create',
           text: 'Host a new game.',
+          selected: false,
           error: false
         },
         {
           name: 'Join Game',
+          linkTo: 'join',
           action: 'join',
           text: 'Play in another user\'s game',
           gameKey: '',
+          selected: false,
           error: false
         },
         {
           name: 'Spectate Game',
+          linkTo: 'spectate',
           action: 'join',
           text: 'Watch another user\'s game',
           gameKey: '',
+          selected: false,
           error: false
         }
       ]
     }
   },
-
+  
   methods: {
   	handleSelection(option){
   		if(option.action == 'join' && (option.gameKey == "" || option.gameKey.length == 0 )){
   			option.error = true
   		} else {
   			option.error = false
+	  		option.selected = true
 	  		this.gameSelected = true
-	  		this.$router.push({ name: 'play' })
   		}
   	}
   }

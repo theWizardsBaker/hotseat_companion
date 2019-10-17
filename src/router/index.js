@@ -10,6 +10,16 @@ const routes = [
     name: 'gameselect',
     component: GameSelect
   },
+  {
+    path: '/play',
+    name: 'play',
+    component: () => import(/* webackChunkName: "play" */ '../views/Play.vue'),
+    children: [
+      {
+        path: '/'
+      }
+    ]
+  }
   // {
   //   path: '/about',
   //   name: 'about',
