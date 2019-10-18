@@ -2,10 +2,13 @@
   <div class="box">
     <div class="answer-outline">
       <div class="content">
-        <strong>?</strong>
-        <p>
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean efficitur sit amet massa fringilla egestas. Nullam condimentum luctus turpis.
-        </p>
+        <strong v-if="revealed">{{name}}</strong>
+        <strong v-else>?</strong>
+        <slot name="text">
+          <p>
+           {{text}}
+          </p>
+        </slot>
       </div>
       <div class="answer-brand">
         answer
@@ -17,6 +20,13 @@
 <script>
 export default {
   name: 'player-guess',
+
+  props: [
+    'name',
+    'text',
+    'revealed',
+  ],
+
   data () {
     return {
 
@@ -28,13 +38,13 @@ export default {
 <style scoped lang="scss">
   .box {
     padding: 8px;
-
+    min-width: 400px;
     .answer-outline {
       padding: 10px;
       border: 2px solid grey;
       border-radius: 5px;
       position: relative;
-      min-height: 100px;
+      min-height: 130px;
     }
 
     .answer-brand {

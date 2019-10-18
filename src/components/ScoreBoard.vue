@@ -1,12 +1,31 @@
 <template>
 <nav class="panel">
   <div class="panel-block">
+    <div class="panel-row">
+      <div class="panel-section heading">
+        Hot Seat
+      </div>
+      <div class="panel-section heading">
+        Player
+      </div>
+      <div class="panel-section heading">
+        Score
+      </div>
+      <div class="panel-section heading">
+        Round Points
+      </div>
+    </div>
     <template v-for="player in players">
       <div class="panel-row" :class="{ 'has-hotseat': player.hotseat }">
         <div class="panel-section hotseat">
-            <span class="icon is-large is-danger" v-show="player.hotseat">
+            <span class="icon is-large has-text-danger" v-show="player.hotseat">
               <i class="fa fa-fire fa-lg"></i>
             </span>
+        
+<!--           <span class="hot-seat-marker" v-show="player.hotseat">
+            &#128293;
+          </span>
+ -->        
         </div>
         <div class="panel-section">
           {{player.name}}
@@ -15,8 +34,10 @@
           <span>
             {{player.score}}
           </span>
+        </div>
+        <div class="panel-section">
           <span class="tag is-success is-small score-change" v-show="player.scoreChange > 0">
-            <span class="icon is-medium is-danger">
+            <span class="icon is-medium has-text-white">
               <i class="fa fa-plus fa-sm"></i>
             </span>
             <span>
@@ -74,15 +95,22 @@ export default {
 
 <style scoped lang="scss">
 .panel {
+  background-color: white;
+  min-height: 100vh;
+  height: 100%;
   .panel-block {
     display: table;
     width: 100%;
+    margin: 0px;
+    padding: 0px;
 
     .panel-row {
       display: table-row;
+
       & + .has-hotseat {
         background-color: lightgrey;
       }
+
       .panel-section {
         align-items: center;
         color: #363636;
@@ -90,10 +118,17 @@ export default {
         justify-content: flex-start;
         padding: .5em .75em;
         display: table-cell;
+
+        &.heading {
+            background-color: #f5f5f5;
+            font-weight: bold;
+        }
       }
+
       &:not(:last-child) .panel-section {
         border-bottom: 1px solid #dbdbdb;
       }
+
     }
 
   }
@@ -114,6 +149,13 @@ export default {
   }
   b {
     font-size: 1.2em;
+  }
+}
+.hotseat {
+  text-align: center; 
+  .hot-seat-marker {
+    font-size: 1em;
+    margin: auto;
   }
 }
 </style>
