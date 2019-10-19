@@ -46,21 +46,7 @@ export default {
           text: "Who is your worst nighmare",
           display: true,
         },
-        {
-          user: "Justin",
-          text: "Who is your worst nighmare",
-          display: true,
-        },
-        {
-          user: "Justin",
-          text: "Who is your worst nighmare",
-          display: true,
-        },
-        {
-          user: "Justin",
-          text: "Who is your worst nighmare",
-          display: true,
-        }
+
       ]
     }
   },

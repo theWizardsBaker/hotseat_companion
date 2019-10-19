@@ -1,21 +1,21 @@
 <template>
   <div class="hero is-medium">
-
-    <div class="questions columns is-mobile is-centered">
-      <div class="column is-narrow ">
-        <card :display="reveal">
-          <template #title>
-            {{question.user}}
-          </template>
-          <template #content>
-            {{question.text}}
-          </template>
-          <template #footer>
-          </template>
-        </card>
+    <div class="card-display">
+      <div class="questions columns is-mobile is-centered">
+        <div class="column is-narrow ">
+          <card :display="reveal">
+            <template #title>
+              {{question.user}}
+            </template>
+            <template #content>
+              {{question.text}}
+            </template>
+            <template #footer>
+            </template>
+          </card>
+        </div>
       </div>
     </div>
-
   </div>
 </template>
 
@@ -52,9 +52,13 @@ export default {
 </script>
 
 <style scoped lang="scss">
-.questions {
-  overflow: auto;
-  flex-direction: row-reverse;
-  flex-wrap: nowrap;
+
+.card-display{
+  padding-bottom: 25px;
+  .questions {
+    overflow: auto;
+    flex-direction: row-reverse;
+    flex-wrap: nowrap;
+  }
 }
 </style>

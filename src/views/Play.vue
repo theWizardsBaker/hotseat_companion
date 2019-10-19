@@ -26,37 +26,12 @@
 
     <!-- pop up helper -->
     <popup :display="showMenu" @close="showMenu = false">
-      <article class="panel is-success">
-        <a class="panel-block">
-          <span class="panel-icon">
-            <i class="fa fa-circle-thin" aria-hidden="true"></i>
-          </span>
-          Show Question
-        </a>
-        <a class="panel-block">
-          <span class="panel-icon">
-            <i class="fa fa-circle-thin" aria-hidden="true"></i>
-          </span>
-          Show
-        </a>
-        <a class="panel-block">
-          <span class="panel-icon">
-            <i class="fa fa-circle-thin" aria-hidden="true"></i>
-          </span>
-          Change Player Order
-        </a>
-        <a class="panel-block">
-          <span class="panel-icon">
-            <i class="fa fa-circle-thin" aria-hidden="true"></i>
-          </span>
-          Quit Game
-        </a>
-      </article>
+
     </popup>
 
     <!-- game display -->
     <div class="columns is-gapless">
-      <div class="column" :class="[ showScoreBoard ? 'is-8-desktop' : 'is-12-desktop' ]">
+      <div class="column" >
         <div class="section">
           <template v-if="showQuestion">
             <h3 class="title is-4 has-text-centered">Question</h3>
@@ -91,11 +66,12 @@
         </div>
         <div class="section">
           <h3 class="title is-4 has-text-centered">Answers</h3>
+          <h3 class="subtitle is-4 has-text-centered">Waiting for 3 answers...</h3>
           <answers />
         </div>
       </div>
-      <div class="column is-4-desktop is-4-widescreen is-hidden-touch" v-show="showScoreBoard">
-        <score-board />
+      <div class="column is-4-desktop is-hidden-touch" v-show="showScoreBoard">
+        <score-board :players="game.players" />
       </div>
     </div>
   </div>
@@ -126,27 +102,119 @@ export default {
 
   data () {
     return {
+
       showMenu: false,
       showScoreBoard: true,
       showQuestion: true,
       questionHistory: false,
-      stages: ['selectHotseat', 'answerQuestion', 'vote', 'reveal'],
-      inHotseat: false,
 
       user: {
+        id: 'xfxxxfs',
         name: "Justin",
         score: 23,
+        inHotseat: false,
       },
 
       game: {
+        
         key: 'XOW23G',
-        reveal: false
+        
+        reveal: false,
+
+        stages: ['enterHotSeat', 'answerQuestion', 'vote', 'reveal'],
+
+        players: [
+          {
+            id: 2,
+            name: 'Justin',
+            score: 20,
+            roundPoints: 3,
+          },
+          {
+            id: 3,
+            name: 'Stephanie',
+            score: 26,
+            roundPoints: 0,
+          },
+          {
+            id: 4,
+            name: 'Carl',
+            score: 22,
+            roundPoints: 7,
+          },
+          {
+            id: 5,
+            name: 'Claire',
+            score: 20,
+            roundPoints: 3,
+          },
+          {
+            id: 6,
+            name: 'Danielle',
+            score: 10,
+            roundPoints: 4,
+          },
+          {
+            id: 7,
+            name: 'Kendra',
+            score: 20,
+            roundPoints: 2,
+          },
+        ],
+
+        options: [
+          {
+            text: 'Show Question',
+            type: 'toggle',
+            action: 'toggleQestion'
+          },
+          {
+            text: 'Change Player Order',
+            type: 'button',
+            aciton: 'selectPlayerOrder',
+          },
+          {
+            text: 'Quit Game',
+            type: 'button',
+            action: 'quitGame'
+          }
+
+        ],
+
+        questions: [
+          {
+            hotsetPlayer: {
+              name: "Justin",
+              id: 2,
+            },
+            text: "Who are you? Who who, who who?",
+            answers: [
+              {
+                player: {
+                  name: "Justin",
+                  id: 2,
+                },
+                text: "Me. I am.",
+                picks: [
+                  2, 3, 4, 5
+                ]
+              },
+            ]
+          }
+        ]
       }
     }
   },
 
-  methods: {
+  computed: {
 
+  },
+
+  methods: {
+    generateId(){
+      let number = Math.random()
+      return number.toString(36).substr(2, 9);
+    }
   }
 }
 </script>

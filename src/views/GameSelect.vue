@@ -5,21 +5,40 @@
   			Hot Seat
   		</h4>
   		<h4 class="subtitle has-text-centered">
-  			Select from the choices below
+  			Start a new game or enter a game key to join another player's
   		</h4>
   		<loading v-if="gameSelected" />
 	  	<div class="columns is-mobile is-3 is-centered is-multiline" v-else>
-	  		<div class="column is-narrow-mobile is-narrow-tablet" :key="option.name" v-for="option in gameOptions">
-			  	<card>
+	  		<div class="column is-narrow-mobile is-narrow-tablet"
+	  				 :key="option.name"
+	  				 v-for="option in gameOptions"
+	  				 >
+			  	<card :display="option.display">
+
 			  		<template #title>
 			  			{{option.name}}
 			  		</template>
+
 			  		<template #content>
 			  			{{option.text}}
 			  		</template>
+
 			  		<template #footer>
-			  			<div class="field" v-if="option.action == 'join'">
-			  				<label class="label">Game Key</label>
+
+			  			<div class="field" :style="{visibility: option.action == 'join' ? 'visible' : 'hidden'}">
+			  				<label class="label help">Name</label>
+							  <div class="control">
+					  			<input type="text"
+					  						 name="room"
+					  						 v-model="userName"
+					  						 class="input"
+					  						 :disabled="gameSelected"
+					  						 :class="{ 'is-danger': option.error }"
+					  						 />
+	  						</div>
+	  					</div>
+	  					<div class="field" :style="{visibility: option.action != 'create' ? 'visible' : 'hidden'}">
+			  				<label class="label help">Game Key</label>
 							  <div class="control">
 					  			<input type="text"
 					  						 name="room"
@@ -27,29 +46,28 @@
 					  						 class="input"
 					  						 :disabled="gameSelected"
 					  						 :class="{ 'is-danger': option.error }"
+					  						 hint="game key"
 					  						 />
-					  			<p class="help is-danger" v-show="option.error">Enter a Game Key to join</p>
 	  						</div>
 	  					</div>
-	  					<div v-else>
-	  						<p class="spacer">
-									&nbsp;
-								</p>
-	  					</div>
+
+
 	  					<div class="field">
 	  						<div class="control">
-					  			<button class="button is-fullwidth" 
+					  			<button class="button is-fullwidth"
 					  							:disabled="gameSelected"
 					  							@click="handleSelection(option)">
 					  				{{option.action | capitalize}} Game
 					  			</button>
 					  		</div>
 					  	</div>
+
 			  		</template>
+
 			  	</card>
 		  	</div>
 	  	</div>
-    </div> 
+    </div>
   </div>
 </template>
 
@@ -58,44 +76,61 @@ import Card from '@/components/Card.vue'
 import Loading from '@/components/Loading.vue'
 
 export default {
-  
+
   name: 'GameSelect',
-  
+
   components: {
   	Card,
   	Loading
   },
 
+  onCreate() {
+
+  },
+
+  mounted() {
+  	for(let i = 0; i < this.gameOptions.length; i++){
+	  	this.delay(800 + (i * 300)).then(() => {
+		  	this.$set(this.gameOptions[i], 'display', true)
+	  	})
+  	}
+  },
+
   data () {
     return {
     	gameRoom: "",
+    	userName: "",
     	gameSelected: false,
       gameOptions: [
         {
           name: 'Create Game',
           action: 'create',
           text: 'Host a new game.',
-          error: false
+          error: false,
+          display: false
         },
         {
           name: 'Join Game',
           action: 'join',
           text: 'Play in another user\'s game',
           gameKey: '',
-          error: false
+          error: false,
+          display: false
         },
         {
           name: 'Spectate Game',
-          action: 'join',
+          action: 'spectate',
           text: 'Watch another user\'s game',
           gameKey: '',
-          error: false
+          error: false,
+          display: false
         }
       ]
     }
   },
 
   methods: {
+
   	handleSelection(option){
   		if(option.action == 'join' && (option.gameKey == "" || option.gameKey.length == 0 )){
   			option.error = true
@@ -104,7 +139,13 @@ export default {
 	  		this.gameSelected = true
 	  		this.$router.push({ name: 'play' })
   		}
-  	}
+  	},
+
+    delay(time, v) {
+       return new Promise((resolve) => {
+           setTimeout(resolve.bind(null, v), time)
+       });
+    },
   }
 }
 </script>

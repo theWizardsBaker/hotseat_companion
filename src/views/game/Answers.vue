@@ -1,8 +1,12 @@
 <template>
   <div class="hero is-medium">
     <div class="columns is-multiline is-3 is-centered">
-      <div class="column is-narrow is-4-fullscreen" v-for="answer in answers">
-        <guess :name="answer.name" :text="answer.text" :reveal="show" />
+      <div class="column is-narrow is-4-fullscreen answers" v-for="answer in answers">
+        <guess :name="answer.name"
+               :text="answer.text"
+               :reveal="show"
+               :selectable="select"
+               />
       </div>
     </div>
   </div>
