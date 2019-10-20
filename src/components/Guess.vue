@@ -2,8 +2,12 @@
   <div class="box">
     <div class="answer-outline">
       <div class="content">
-        <strong v-if="revealed">{{name}}</strong>
-        <strong v-else>?</strong>
+        <h3 class="title is-5 has-text-dark" v-show="revealed">{{name}}</h3>
+        <h3 class="title is-6 has-text-dark" v-show="!revealed">
+          <span class="tag has-text-dark">
+            <i class="fa fa-question-circle fa-2x" aria-hidden="true"></i>
+          </span>
+        </h3>
         <slot name="text">
           <p>
            {{text}}
@@ -40,14 +44,20 @@ export default {
     padding: 8px;
     min-width: 400px;
     .answer-outline {
+
+      .title {
+        margin-bottom: 10px;
+      }
+
       padding: 10px;
-      border: 2px solid grey;
+      border: 2px solid #B8ADAA;
       border-radius: 5px;
       position: relative;
       min-height: 130px;
     }
 
     .answer-brand {
+      color: #B8ADAA;
       position: absolute;
       bottom: -5px;
       right: -5px;

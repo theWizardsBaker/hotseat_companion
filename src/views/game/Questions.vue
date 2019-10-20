@@ -8,7 +8,7 @@
       <div class="column is-narrow old-questions" v-for="question in questions">
         <card :display="question.display">
           <template #title>
-            {{question.name}}
+            {{question.user}}
           </template>
           <template #content>
             {{question.text}}
@@ -46,6 +46,26 @@ export default {
           text: "Who is your worst nighmare",
           display: true,
         },
+        {
+          user: "Justin",
+          text: "Who is your worst nighmare",
+          display: true,
+        },
+        {
+          user: "Justin",
+          text: "Who is your worst nighmare",
+          display: true,
+        },
+        {
+          user: "Justin",
+          text: "Who is your worst nighmare",
+          display: true,
+        },
+        {
+          user: "Justin",
+          text: "Who is your worst nighmare",
+          display: true,
+        },
 
       ]
     }
@@ -61,8 +81,9 @@ export default {
 
 <style scoped lang="scss">
 .questions {
-  overflow: auto;
+  overflow-x: scroll;
+  overflow-y: hidden;
   flex-direction: row-reverse;
-  flex-wrap: nowrap;
+  justify-content: center;
 }
 </style>

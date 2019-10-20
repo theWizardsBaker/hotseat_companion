@@ -31,7 +31,8 @@
 
     <!-- game display -->
     <div class="columns is-gapless">
-      <div class="column" >
+      <div class="column" :class="[ showScoreBoard ? 'is-8-desktop' : 'is-12-desktop']" >
+        <!-- question section -->
         <div class="section">
           <template v-if="showQuestion">
             <h3 class="title is-4 has-text-centered">Question</h3>
@@ -64,9 +65,11 @@
             </div>
           </template>
         </div>
+        <!-- answer section -->
         <div class="section">
           <h3 class="title is-4 has-text-centered">Answers</h3>
-          <h3 class="subtitle is-4 has-text-centered">Waiting for 3 answers...</h3>
+          <h3 class="subtitle is-4 has-text-centered">Waiting for 3 more answers...</h3>
+          <answer :name="user.name" />
           <answers />
         </div>
       </div>
@@ -85,6 +88,7 @@ import Titlebar from '@/components/Titlebar'
 import Questions from '@/views/game/Questions'
 import Question from '@/views/game/Question'
 import Answers from '@/views/game/Answers'
+import Answer from '@/views/game/Answer'
 
 export default {
 
@@ -97,6 +101,7 @@ export default {
     ScoreBoard,
     Questions,
     Question,
+    Answer,
     Answers
   },
 
@@ -113,6 +118,7 @@ export default {
         name: "Justin",
         score: 23,
         inHotseat: false,
+        gameHost: true
       },
 
       game: {
@@ -211,10 +217,7 @@ export default {
   },
 
   methods: {
-    generateId(){
-      let number = Math.random()
-      return number.toString(36).substr(2, 9);
-    }
+
   }
 }
 </script>

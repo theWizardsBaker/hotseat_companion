@@ -52,8 +52,6 @@ export default {
 
   .card-container{
     position: relative;
-/*    transition: transform 0.8s;
-    transform-style: preserve-3d;*/
     -webkit-perspective: 1000;
        -moz-perspective: 1000;
             perspective: 1000;
@@ -61,7 +59,7 @@ export default {
 
 
     .card {
-      &.flip, &:hover {
+      &.flip {
         -webkit-transform: rotateY(180deg);
            -moz-transform: rotateY(180deg);
                 transform: rotateY(180deg);
@@ -82,11 +80,6 @@ export default {
       margin-bottom: 0px;
       padding: 0px;
 
- /*     -webkit-transition: all .4s linear;
-      transition: all .4s linear;
-
-      -webkit-transform-style: preserve-3d;
-      transform-style: preserve-3d;*/
     }
 
     .card-front {
@@ -111,33 +104,44 @@ export default {
       width: 100%;
       height: 100%;
       
-      padding: 15px;
+      padding: 8px;
 
 
       .playing-card-outline {
-        border: 2px solid grey;
-        border-radius: 5px;
+        display: flex;
+        flex-direction: column; 
         position: relative;
         width: 100%;
+        padding-bottom: 15px;
+        border: 2px solid #B8ADAA;
+        border-radius: 5px;
 
         .title {
           padding: 10px;
+          padding-top: 15px;
           margin: 0px;
           text-align: center;
         }
 
         .playing-card-brand {
+          color: #B8ADAA;
           position: absolute;
-          bottom: -10px;
+          bottom: -6px;
           right: -3px;
+          padding: 0px;
           background-color: white;
-          padding-left: 10px;
+          padding-left: 7px;
+          padding-right: 4px;
           font-weight: bold;
           font-variant: small-caps;
+          line-height: 15px;
         }
 
         .playing-card-content {
           padding: 10px;
+          height: 100%;
+          display: inline-flex;
+          align-items: stretch;
         }
 
         .playing-card-footer{

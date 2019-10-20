@@ -56,7 +56,9 @@ export default {
 .card-display{
   padding-bottom: 25px;
   .questions {
-    overflow: auto;
+    /*overflow: auto;*/
+    overflow-x: auto;
+    overflow-y: hidden;
     flex-direction: row-reverse;
     flex-wrap: nowrap;
   }

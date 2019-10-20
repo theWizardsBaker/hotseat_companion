@@ -1,10 +1,27 @@
 <template>
   <div class="hero is-medium">
-      <guess :name="answer.name" :text="answer.text" :reveal="show">
-        <template #text>
-          HELLO FOOL
-        </template>
-      </guess>
+    <div class="columns">
+      <div class="column is-three-fifths is-offset-one-fifth">
+        <guess :name="name" :revealed="true">
+          <template #text>
+            <textarea class="textarea" v-model="answer">
+            </textarea>
+            <p class="help has-text-grey-light">{{characterCount}}/{{length}}</p>
+            <br/>
+          </template>
+        </guess>
+        <div class="actions">
+          <div class="field is-grouped is-grouped-centered">
+            <div class="control">
+              <button class="button is-success">Submit</button>
+            </div>
+            <div class="control">
+              <button class="button is-link is-light">Cancel</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -19,24 +36,38 @@ export default {
   	Guess,
   },
 
+  props: [
+    'name',
+  ],
+
   data () {
     return {
-      show: false,
-      answers: {
-        user: "Justin",
-        text: "Me"
-      },
+      answer: '',
+      length: 100
     }
   },
   
-  methods: {
-  	handleSelection(option){
+  computed: {
+    characterCount(){
+      return this.answer.length
+    }
+  },
 
-  	}
+  watch: {
+    characterCount(value){
+      if(value > this.length){
+        this.$set(this, 'answer', this.answer.substring(0,this.length))
+      }
+    }
   }
 }
 </script>
 
 <style scoped lang="scss">
-
+.help {
+  text-align: right;
+}
+.actions {
+  padding-bottom: 30px;
+}
 </style>

@@ -7,8 +7,7 @@
   		<h4 class="subtitle has-text-centered">
   			Start a new game or enter a game key to join another player's
   		</h4>
-  		<loading v-if="gameSelected" />
-	  	<div class="columns is-mobile is-3 is-centered is-multiline" v-else>
+	  	<div class="columns is-mobile is-3 is-centered is-multiline">
 	  		<div class="column is-narrow-mobile is-narrow-tablet"
 	  				 :key="option.name"
 	  				 v-for="option in gameOptions"
@@ -24,28 +23,29 @@
 			  		</template>
 
 			  		<template #footer>
-
-			  			<div class="field" :style="{visibility: option.action == 'join' ? 'visible' : 'hidden'}">
+			  			<div class="field" v-if="option.hasOwnProperty('userName')">
 			  				<label class="label help">Name</label>
 							  <div class="control">
 					  			<input type="text"
 					  						 name="room"
-					  						 v-model="userName"
+					  						 v-model="option.userName"
 					  						 class="input"
+					  						 length="25"
 					  						 :disabled="gameSelected"
 					  						 :class="{ 'is-danger': option.error }"
 					  						 />
 	  						</div>
 	  					</div>
-	  					<div class="field" :style="{visibility: option.action != 'create' ? 'visible' : 'hidden'}">
+	  					<div class="field" v-if="!!option.hasOwnProperty('gameKey')">
 			  				<label class="label help">Game Key</label>
 							  <div class="control">
 					  			<input type="text"
 					  						 name="room"
-					  						 v-model="gameRoom"
+					  						 v-model="option.gameKey"
 					  						 class="input"
 					  						 :disabled="gameSelected"
 					  						 :class="{ 'is-danger': option.error }"
+					  						 length="10"
 					  						 hint="game key"
 					  						 />
 	  						</div>
@@ -73,7 +73,6 @@
 
 <script>
 import Card from '@/components/Card.vue'
-import Loading from '@/components/Loading.vue'
 
 export default {
 
@@ -81,7 +80,6 @@ export default {
 
   components: {
   	Card,
-  	Loading
   },
 
   onCreate() {
@@ -98,32 +96,32 @@ export default {
 
   data () {
     return {
-    	gameRoom: "",
-    	userName: "",
     	gameSelected: false,
       gameOptions: [
         {
           name: 'Create Game',
           action: 'create',
-          text: 'Host a new game.',
+          text: 'Host a new game that other players can join.',
           error: false,
-          display: false
+          display: false,
+		    	userName: '',
         },
         {
           name: 'Join Game',
           action: 'join',
-          text: 'Play in another user\'s game',
-          gameKey: '',
+          text: 'Join another user\'s game.',
           error: false,
-          display: false
+          display: false,
+        	gameKey: '',
+		    	userName: '',
         },
         {
           name: 'Spectate Game',
           action: 'spectate',
-          text: 'Watch another user\'s game',
-          gameKey: '',
+          text: 'Watch another user\'s game.',
           error: false,
-          display: false
+          display: false,
+        	gameKey: '',
         }
       ]
     }
@@ -132,20 +130,30 @@ export default {
   methods: {
 
   	handleSelection(option){
-  		if(option.action == 'join' && (option.gameKey == "" || option.gameKey.length == 0 )){
-  			option.error = true
-  		} else {
-  			option.error = false
+
+			option.error = false
+
+  		if( option.hasOwnProperty('userName') ) {
+  			option.error = option.userName == "" || option.userName.length == 0
+  		}
+
+  		if( option.hasOwnProperty('gameKey') ) {
+  			option.error = option.error || (option.gameKey == "" || option.gameKey.length == 0)
+  		}
+
+  		if(!option.error){
 	  		this.gameSelected = true
-	  		this.$router.push({ name: 'play' })
+	  		this.$router.push({
+	  			name: 'play',
+	  			query: {
+	  				game: option.gameKey
+	  			},
+	  			params: this.userName
+	  		})
   		}
   	},
 
-    delay(time, v) {
-       return new Promise((resolve) => {
-           setTimeout(resolve.bind(null, v), time)
-       });
-    },
+
   }
 }
 </script>
@@ -158,6 +166,6 @@ export default {
 		height: 80px;
 	}
 	.hero {
-		height: 100vh;
+		min-height: 100vh;
 	}
 </style>

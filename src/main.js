@@ -13,6 +13,16 @@ Vue.filter('capitalize', function (value) {
   return value.charAt(0).toUpperCase() + value.slice(1)
 })
 
+Vue.mixin({
+  methods: {
+	delay(time, v){
+       return new Promise((resolve) => {
+           setTimeout(resolve.bind(null, v), time)
+       });
+    },
+  }
+})
+
 new Vue({
   router,
   store,
