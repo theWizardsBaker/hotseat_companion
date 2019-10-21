@@ -23,6 +23,8 @@ Vue.mixin({
   }
 })
 
+//  mobile: 768, tablet: 1023, small_desktop: 1215, large_desktop: 1407
+
 new Vue({
   router,
   store,

@@ -16,7 +16,7 @@
               <button class="button is-success">Submit</button>
             </div>
             <div class="control">
-              <button class="button is-link is-light">Cancel</button>
+              <button class="button is-light">Cancel</button>
             </div>
           </div>
         </div>
@@ -64,10 +64,13 @@ export default {
 </script>
 
 <style scoped lang="scss">
-.help {
-  text-align: right;
-}
-.actions {
-  padding-bottom: 30px;
+.hero {
+  padding: 1.5vw;
+  .help {
+    text-align: right;
+  }
+  .actions {
+    padding-bottom: 30px;
+  }
 }
 </style>

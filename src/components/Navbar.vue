@@ -9,7 +9,7 @@
       </div>
     </div>
 
-    <div class="navbar-center is-hidden-touch">
+    <div class="navbar-center is-hidden-mobile">
       <div class="navbar-item">
         <h3 class="title is-marginless is-paddingless is-4 has-text-light">{{name}}</h3>
       </div>

@@ -1,5 +1,10 @@
 <template>
-  <div class="box">
+  <div class="box" :class="{ 'selectable': selectable }" @click="select">
+    <div class="selection" v-show="isSelected">
+      <span class="icon">
+        <i class="fa fa-check-circle fa-3x"></i>
+      </span>
+    </div>
     <div class="answer-outline">
       <div class="content">
         <h3 class="title is-5 has-text-dark" v-show="revealed">{{name}}</h3>
@@ -29,11 +34,20 @@ export default {
     'name',
     'text',
     'revealed',
+    'selectable',
+    'isSelected'
   ],
 
   data () {
     return {
+    }
+  },
 
+  methods: {
+    select(){
+      if(this.selectable){
+        this.$emit('selected')
+      }
     }
   }
 }
@@ -41,8 +55,31 @@ export default {
 
 <style scoped lang="scss">
   .box {
+    position: relative;
     padding: 8px;
-    min-width: 400px;
+    width: 100%;
+
+    &.selectable:hover {
+      cursor: pointer;
+    }
+
+    .selection {
+      position: absolute;
+      left: 0;
+      top: 0;
+      height: 100%;
+      width: 100%;
+      z-index: 3;
+
+      background-color: #008000b0;
+      color: white;
+
+      text-align: center;
+
+      border-radius: 5px;
+      padding: 3em;
+    }
+
     .answer-outline {
 
       .title {

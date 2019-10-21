@@ -7,7 +7,7 @@
             >
       <template #bar-end>
         <div class="buttons">
-          <button class="button is-dark is-medium" @click="showMenu = true">
+          <button class="button is-dark is-medium" @click="popup.show = true; popup.showMenu = true">
             <span class="icon">
               <i class="fa fa-gear" aria-hidden="true"></i>
             </span>
@@ -25,13 +25,34 @@
     <titlebar />
 
     <!-- pop up helper -->
-    <popup :display="showMenu" @close="showMenu = false">
-
+    <popup :display="popup.show" @close="popup.show = false; popup.showMenu = false">
+      <option-menu :options="game.options" @optionClick="handleOptionClick" v-if="popup.showMenu">
+        <template #title>Options</template>
+      </option-menu>
+      <div class="content" v-else-if="popup.confirmQuit">
+        <div class="box has-text-centered" >
+          <h3 class="title is-5 has-text-dark">Are you sure you want to quit?</h3>
+          <div class="field is-grouped is-grouped-centered">
+            <div class="control">
+              <button class="button is-link">Quit Game</button>
+            </div>
+            <div class="control">
+              <button class="button is-primary" 
+                      @click="popup.show = false; popup.showMenu = false">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div v-else-if="popup.reorderPlayers">
+        <player-order :players="game.players" />
+      </div>
     </popup>
 
     <!-- game display -->
     <div class="columns is-gapless">
-      <div class="column" :class="[ showScoreBoard ? 'is-8-desktop' : 'is-12-desktop']" >
+      <div class="column" >
         <!-- question section -->
         <div class="section">
           <template v-if="showQuestion">
@@ -68,14 +89,21 @@
         <!-- answer section -->
         <div class="section">
           <h3 class="title is-4 has-text-centered">Answers</h3>
-          <h3 class="subtitle is-4 has-text-centered">Waiting for 3 more answers...</h3>
+          <h3 class="subtitle is-4 has-text-centered">Waiting for 3 moreanswers...</h3>
           <answer :name="user.name" />
-          <answers />
+          <answers :shrink="showScoreBoard"  :select="true"  />
         </div>
       </div>
-      <div class="column is-4-desktop is-hidden-touch" v-show="showScoreBoard">
-        <score-board :players="game.players" />
-      </div>
+      <transition name="slide-right">
+        <div class="column is-4-desktop is-hidden-touch" v-show="showScoreBoard">
+          <score-board :players="game.players" />
+        </div>
+      </transition>
+      <transition name="slide-right">
+        <div class="is-hidden-desktop floating-scoreboard" v-show="showScoreBoard">
+          <score-board :players="game.players" />
+        </div>
+      </transition>
     </div>
   </div>
 </template>
@@ -89,6 +117,8 @@ import Questions from '@/views/game/Questions'
 import Question from '@/views/game/Question'
 import Answers from '@/views/game/Answers'
 import Answer from '@/views/game/Answer'
+import PlayerOrder from '@/views/game/PlayerOrder'
+import OptionMenu from '@/components/OptionMenu'
 
 export default {
 
@@ -102,16 +132,27 @@ export default {
     Questions,
     Question,
     Answer,
-    Answers
+    Answers,
+    OptionMenu,
+    PlayerOrder
+  },
+
+  created(){
   },
 
   data () {
     return {
 
-      showMenu: false,
       showScoreBoard: true,
       showQuestion: true,
       questionHistory: false,
+
+      popup: {
+        show: false,
+        showMenu: false,
+        confirmQuit: false,
+        reorderPlayers: false,
+      },
 
       user: {
         id: 'xfxxxfs',
@@ -170,21 +211,20 @@ export default {
 
         options: [
           {
-            text: 'Show Question',
-            type: 'toggle',
-            action: 'toggleQestion'
+            text: 'Toggle Question Display',
+            icon: 'fa-eye-slash',
+            action: 'hide-questions'
           },
           {
-            text: 'Change Player Order',
-            type: 'button',
-            aciton: 'selectPlayerOrder',
+            text: 'Select Player Order',
+            icon: 'fa-users',
+            action: 'reorder'
           },
           {
             text: 'Quit Game',
-            type: 'button',
-            action: 'quitGame'
+            icon: 'fa-times-circle',
+            action: 'quit'
           }
-
         ],
 
         questions: [
@@ -217,18 +257,47 @@ export default {
   },
 
   methods: {
+    handleOptionClick(action){
+      console.log(action)
+      switch(action){
+        case 'hide-questions':
+          this.showQuestion = !this.showQuestion
+        break;
+        case 'reorder':
+          this.popup.reorderPlayers = true
+          this.popup.showMenu = false
+        break;
+        case 'quit':
+          this.popup.confirmQuit = true
+          this.popup.showMenu = false
+        break;
+      }
 
+    }
   }
 }
 </script>
 
 <style scoped lang="scss">
+
+  @import "@/styles/slide-right-animation.scss";
+
+  .slide-right-enter-active {
+    animation: slideInRight .5s;
+  }
+  .slide-right-leave-active {
+    animation: slideOutRight .4s reverse;
+  }
+
+
   .gameboard {
     min-height: 100vh;
     min-width: 100vw;
     margin-bottom: 50px;
+    position: relative;
+
     .section {
-      padding: 1.5em;
+      padding: 1vw;
     }
 
     .button{
@@ -236,5 +305,20 @@ export default {
         margin: auto;
       }
     }
+
+    .columns {
+      position: relative;
+
+      .floating-scoreboard {
+        position: absolute;
+        height: 100%;
+        width: 100%;
+        top: 0;
+        left: 0;
+      }
+    }
   }
+
+
+
 </style>

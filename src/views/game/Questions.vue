@@ -46,26 +46,7 @@ export default {
           text: "Who is your worst nighmare",
           display: true,
         },
-        {
-          user: "Justin",
-          text: "Who is your worst nighmare",
-          display: true,
-        },
-        {
-          user: "Justin",
-          text: "Who is your worst nighmare",
-          display: true,
-        },
-        {
-          user: "Justin",
-          text: "Who is your worst nighmare",
-          display: true,
-        },
-        {
-          user: "Justin",
-          text: "Who is your worst nighmare",
-          display: true,
-        },
+
 
       ]
     }
@@ -80,10 +61,14 @@ export default {
 </script>
 
 <style scoped lang="scss">
-.questions {
-  overflow-x: scroll;
-  overflow-y: hidden;
-  flex-direction: row-reverse;
-  justify-content: center;
+.hero {
+
+  padding: 0 4vw;
+  .questions {
+    overflow-x: auto;
+    overflow-y: hidden;
+    flex-direction: row-reverse;
+    /*justify-content: center;*/
+  }
 }
 </style>

@@ -1,9 +1,9 @@
 <template>
   <div id="app">
-  	<div class="hero is-dark" v-show="loading">
+  	<div class="hero is-dark" v-show="isLoading">
 	  	<loading />
     </div>
-    <router-view v-show="!loading"/>
+    <router-view v-show="!isLoading"/>
   </div>
 </template>
 <script>
@@ -17,8 +17,10 @@ export default {
   	Loading,
   },
 
-  data: {
-  	loading: false
+  data() {
+  	return {
+	  	isLoading: false
+  	}
   }
 }
 </script

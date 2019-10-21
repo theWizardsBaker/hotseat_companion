@@ -1,42 +1,53 @@
 <template>
-  <div class="hero is-medium">
-      <guess :name="answer.name" :text="answer.text" :reveal="show">
-        <template #text>
-          HELLO FOOL
-        </template>
-      </guess>
-  </div>
+  <article class="panel is-primary">
+    <p class="panel-heading">
+      <slot name="title"></slot>
+    </p>
+    <a class="panel-block" v-for="option in options" @click="handleClick(option.action)">
+      <span class="panel-icon">
+        <i class="fa" :class="option.icon" aria-hidden="true"></i>
+      </span>
+      {{option.text}}
+    </a>
+  </article>
 </template>
 
 <script>
-import Guess from '@/components/Guess'
 
 export default {
   
-  name: 'answer',
+  name: 'option-menu',
   
-  components: {
-  	Guess,
-  },
+  props: [
+    'options'
+  ],
 
   data () {
     return {
-      show: false,
-      answers: {
-        user: "Justin",
-        text: "Me"
-      },
+
     }
   },
   
   methods: {
-  	handleSelection(option){
-
-  	}
+    handleClick(action){
+      this.$emit('optionClick', action)
+    }
   }
 }
 </script>
 
 <style scoped lang="scss">
-
+.panel {
+  margin: 0 4em;
+  .panel-heading {
+    text-weight: bold;
+    text-align:center;
+  }
+  .panel-block {
+    background-color: white;
+    &:hover {
+      background-color: lightgrey;
+    }
+  }
+}
 </style>
