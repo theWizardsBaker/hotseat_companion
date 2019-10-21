@@ -8,9 +8,20 @@
               {{question.user}}
             </template>
             <template #content>
-              {{question.text}}
+              <div v-if="answer">
+                <textarea class="textarea" v-model="question.text">
+                </textarea>
+                <p class="help has-text-grey-light">{{characterCount}}/{{question.length}}</p>
+                <br/>
+              </div>
+              <div v-else>
+                {{question.text}}
+              </div>
             </template>
             <template #footer>
+              <button class="button is-success is-fullwidth" v-if="answer">
+                Reveal
+              </button>
             </template>
           </card>
         </div>
@@ -31,7 +42,8 @@ export default {
   },
 
   props: [
-    'reveal'
+    'reveal',
+    'answer'
   ],
 
   data () {
@@ -39,6 +51,21 @@ export default {
       question: {
         user: "Justin",
         text: "Who is your worst nighmare",
+        length: 255,
+      },
+    }
+  },
+
+  computed: {
+    characterCount(){
+      return this.question.text.length
+    }
+  },
+
+  watch: {
+    characterCount(value){
+      if(value > this.question.length){
+        this.$set(this.question, 'text', this.question.text.substring(0, this.question.length))
       }
     }
   },
@@ -61,6 +88,10 @@ export default {
     overflow-y: hidden;
     flex-direction: row-reverse;
     flex-wrap: nowrap;
+
+    .help {
+      text-align: right;
+    }
   }
 }
 </style>

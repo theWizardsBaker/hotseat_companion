@@ -3,23 +3,28 @@
     <p class="panel-heading">
       Player Order
     </p>
-    <a class="panel-block" v-for="player, index in players" @click="setOrder(player)">
+    <a class="panel-block hoverable" v-for="player, index in players" @click="setOrder(player)">
       <span class="tag is-primary is-rounded">
         <template v-if="player.newOrder !== null">
           <b>{{player.newOrder + 1}}</b>
         </template>
         <template v-else>
-          -
+          &nbsp;-&nbsp;
         </template>
       </span>
       <span class="name">{{player.name}}</span>
     </a>
     <div class="panel-block">
-      <button class="button" 
-              :class="{ 'is-disabled': !complete, 'is-success': complete }" 
-              :disabled="!complete">
-        Save Order
-      </button>
+      <div class="field is-grouped is-grouped-centered">
+        <div class="control">
+          <button class="button" 
+                  :class="{ 'is-disabled': !complete, 'is-success': complete }" 
+                  :disabled="!complete"
+                  @click="saveOrder">
+            Save Order
+          </button>
+        </div>
+      </div>
     </div>
   </article>
 </template>
@@ -48,7 +53,9 @@ export default {
 
   computed: {
     complete(){
-      return false
+      return this.players.reduce((accum, player) => {
+        return accum && player.newOrder !== null
+      }, true)
     }
   },
 
@@ -58,24 +65,40 @@ export default {
         this.$set(player, 'newOrder', this.currentOrder)
         this.currentOrder++
       } else {
-        this.$set(player, 'newOrder', null)
+        let removedNumber = player.newOrder
         this.players.forEach(player => {
-          if(player.newOrder){
+          if(player.newOrder && player.newOrder > removedNumber){
             player.newOrder --
           }
         })
+        this.$set(player, 'newOrder', null)
         this.currentOrder--
       }
+    },
+    saveOrder(){
+      this.players.forEach(player => {
+        this.$set(player, 'order', player.newOrder)
+      })
+      this.$emit('complete')
     }
   }
 }
 </script>
 
 <style scoped lang="scss">
-.panel-block {
-  background-color: white;
-  .tag {
-    margin-right: 30px;
+.panel {
+  margin: 0 4em;
+  .panel-block {
+    background-color: white;
+    .field {
+      width: 100%;
+    }
+    &.hoverable:hover {
+      background-color: lightgrey;
+    }
+    .tag {
+      margin-right: 30px;
+    }
   }
 }
 

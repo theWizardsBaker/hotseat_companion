@@ -12,11 +12,11 @@
         </guess>
         <div class="actions">
           <div class="field is-grouped is-grouped-centered">
-            <div class="control">
-              <button class="button is-success">Submit</button>
-            </div>
-            <div class="control">
+            <div class="control" v-if="lockedIn" @click="unlockAnswer">
               <button class="button is-light">Cancel</button>
+            </div>
+            <div class="control" v-else @click="lockAnswer">
+              <button class="button is-success">Submit</button>
             </div>
           </div>
         </div>
@@ -43,7 +43,8 @@ export default {
   data () {
     return {
       answer: '',
-      length: 100
+      length: 100,
+      lockedIn: false
     }
   },
   
@@ -58,6 +59,15 @@ export default {
       if(value > this.length){
         this.$set(this, 'answer', this.answer.substring(0,this.length))
       }
+    }
+  },
+
+  methods: {
+    lockAnswer(){
+
+    },
+    unlockAnswer(){
+
     }
   }
 }

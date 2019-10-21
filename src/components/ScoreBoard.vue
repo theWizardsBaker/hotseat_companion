@@ -22,10 +22,10 @@
               <i class="fa fa-fire fa-lg"></i>
             </span>
         
-<!--           <span class="hot-seat-marker" v-show="player.hotseat">
-            &#128293;
-          </span>
- -->        
+              <!--           <span class="hot-seat-marker" v-show="player.hotseat">
+                          &#128293;
+                        </span>
+               -->        
         </div>
         <div class="panel-section">
           {{player.name}}
@@ -157,5 +157,9 @@ export default {
     font-size: 1em;
     margin: auto;
   }
+}
+
+.section {
+  padding: 20px
 }
 </style>
