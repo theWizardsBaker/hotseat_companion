@@ -82,18 +82,25 @@ export default {
   	Card,
   },
 
-  onCreate() {
-
-  },
-
   mounted() {
   	for(let i = 0; i < this.gameOptions.length; i++){
 	  	this.delay(800 + (i * 300)).then(() => {
 		  	this.$set(this.gameOptions[i], 'display', true)
 	  	})
   	}
+
   },
 
+  created(){
+  	this.$socket.on('game_created', () => {
+  		console.log("YO DE YO DE OOOOO")
+  	})
+  },
+
+  beforeDestory(){
+
+  },
+  
   data () {
     return {
     	gameSelected: false,
@@ -101,10 +108,11 @@ export default {
         {
           name: 'Create Game',
           action: 'create',
-          text: 'Host a new game that other players can join.',
+          text: 'Create a new game.',
           error: false,
           display: false,
 		    	userName: '',
+		    	selected: false,
         },
         {
           name: 'Join Game',
@@ -114,6 +122,7 @@ export default {
           display: false,
         	gameKey: '',
 		    	userName: '',
+		    	selected: false,
         },
         {
           name: 'Spectate Game',
@@ -122,9 +131,16 @@ export default {
           error: false,
           display: false,
         	gameKey: '',
+        	selected: false
         }
       ]
     }
+  },
+
+  computed: {
+  	selectedOption(){
+  		return this.gameOptions.findOne((option) => option.selected)
+  	}
   },
 
   methods: {
@@ -143,16 +159,37 @@ export default {
 
   		if(!option.error){
 	  		this.gameSelected = true
-	  		this.$router.push({
-	  			name: 'play',
-	  			query: {
-	  				game: option.gameKey
-	  			},
-	  			params: this.userName
-	  		})
+  			this[option.action + 'Game']()
   		}
   	},
 
+		createGame(){
+			console.log("create")
+	  	this.$socket.emit('create_game', { userName: option.userName })
+  	},
+
+		joinGame(){
+			console.log("join")
+	  	this.$socket.emit('join_game', { userName: option.userName, gameKey: option.gameKey, spectate: false })
+  	},
+
+		spectateGame(){
+			console.log("spectate")
+	  	this.$socket.emit('join_game', { userName: option.userName, gameKey: option.gameKey, spectate: true })
+  	},
+/*
+  	navigateToGame(userId, userName, gameKey){
+  		this.$router.push({
+  			name: 'play',
+  			query: {
+  				game: selectedOption.gameKey
+  			},
+  			params: {
+  				id: userId,
+  				name: userName
+  			}
+  		})
+  	}*/
 
   }
 }

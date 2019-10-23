@@ -2,16 +2,31 @@ import Vue from 'vue'
 import App from './App.vue'
 import router from './router'
 import store from './store'
+import VueSocketIO from 'vue-socket.io'
 
 import '@/styles/main.scss'
 
 Vue.config.productionTip = false
+
+// Vue.use(VueSocketIO, `//${process.env.SOCKET_BACKEND}`, store);
+
+Vue.use(new VueSocketIO({
+    debug: process.env.NODE_ENV === 'development',
+    connection: `${process.env.VUE_APP_SOCKET_BACKEND}`, //options object is Optional
+    vuex: {
+      store,
+      actionPrefix: "SOCKET_",
+      mutationPrefix: "SOCKET_"
+    }
+  })
+);
 
 Vue.filter('capitalize', function (value) {
   if (!value) return ''
   value = value.toString()
   return value.charAt(0).toUpperCase() + value.slice(1)
 })
+
 
 Vue.mixin({
   methods: {
@@ -22,8 +37,6 @@ Vue.mixin({
     },
   }
 })
-
-//  mobile: 768, tablet: 1023, small_desktop: 1215, large_desktop: 1407
 
 new Vue({
   router,

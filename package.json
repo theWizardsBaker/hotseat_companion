@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "vue-cli-service serve",
+    "dev": "export SOCKET_BACKEND=localhost:8087; vue-cli-service serve --port 3005",
     "build": "vue-cli-service build"
   },
   "dependencies": {
@@ -11,6 +11,7 @@
     "core-js": "^3.1.2",
     "vue": "^2.6.10",
     "vue-router": "^3.0.6",
+    "vue-socket.io": "^3.0.7",
     "vuex": "^3.0.1"
   },
   "devDependencies": {

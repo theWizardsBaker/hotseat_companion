@@ -81,8 +81,7 @@
         <div class="columns">
           <div class="column" >
             <!-- question section -->
-            <div class="section">
-              <template v-if="!display.hideQuestion">
+            <div class="section" v-show="!display.hideQuestion">
                 <h3 class="title is-4 has-text-centered">Question</h3>
                 <div v-show="!display.questionHistory">
                   <!-- question -->
@@ -116,22 +115,18 @@
                     </button>
                   </div>
                 </div>
-              </template>
             </div>
             <!-- answer section -->
             <div class="section">
               <br/>
-              <div v-show="display.waiting">
-                <h3 class="subtitle is-4 has-text-centered">Waiting for 3 more answers...</h3>
-              </div>
               <div v-show="display.answer">
                 <h3 class="title is-4 has-text-centered">Answer</h3>
-                <h3 class="subtitle is-4 has-text-centered">Waiting for 3 more answers...</h3>
+                <h3 class="subtitle is-5 has-text-centered">Waiting for 3 more answers...</h3>
                 <answer :name="user.name" v-show="display.answer" />
               </div>
               <div v-show="display.answers">
                 <h3 class="title is-4 has-text-centered">Answers</h3>
-                <h3 class="subtitle is-4 has-text-centered">Waiting for 3 more answers...</h3>
+                <h3 class="subtitle is-5 has-text-centered">Waiting for 3 more answers...</h3>
                 <answers :shrink="display.scoreboard"  :select="true"/>
               </div>
             </div>
@@ -197,7 +192,7 @@ export default {
         revealQuestion: false,
         answer: false,
         answers: false,
-        waiting: false,
+        selectAnswers: false,
       },
 
       popup: {
@@ -229,7 +224,7 @@ export default {
             name: 'enterHotSeat',
             directions: {
               title: "Draw",
-              text: "Player in the HotSeat selects and reads a card"
+              text: "Player in the Hot Seat selects and reads a card"
             },
             display: {}
           },
@@ -250,7 +245,8 @@ export default {
               text: "Select which answer you think was written by the player in the Hot Seat"
             },
             display: {
-              answers: true
+              answers: true,
+              selectAnswers: true
             }
           }, 
           {
@@ -260,7 +256,8 @@ export default {
               text: "The player in the Hot Seat's answer is revealed"
             },
             display: {
-              answers: true
+              answers: true,
+              selectAnswers: false
             }
           },
           {
@@ -395,6 +392,7 @@ export default {
   },
 
   methods: {
+
     handleOptionClick(action){
       // set point maximum
       switch(action){
@@ -416,9 +414,11 @@ export default {
       }
 
     },
+
     quitGame(){
 
     }
+
   }
 }
 </script>
@@ -457,9 +457,13 @@ export default {
         justify-content: center;
         flex-direction: column;
       .game-display {
+
         .section {
-          padding: 2em 0;
+          padding: 2em;
           padding-bottom: 5em;
+          &:first-child {
+            padding-bottom: 4em;
+          }
         }
 
         .button{
@@ -475,7 +479,7 @@ export default {
             position: absolute;
             height: 100%;
             width: 100%;
-            top: 0;
+            top: 10px;
             left: 0;
           }
         }
