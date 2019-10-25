@@ -7,56 +7,65 @@ export default new Vuex.Store({
   state: {
 
    	game: {
-   		host: false,
   	 	key: null,
-  	 	score: 0,
+   		host: false,
       connected: false,
   	},
 
   	user: {
-        id: '',
-        name: '',
-        observer: false,
-        hotseat: false,
-        active: false,
+      id: '',
+      observer: false,
   	},
 
 	  players: [],
+        // hotseat: false,
+        // active: false,
 
-    questions: [],
-    //   {
-    //     hotsetPlayer: {
-    //       name: "Justin",
-    //       id: 2,
-    //     },
-    //     text: "Who are you? Who who, who who?",
-    //     answers: [
-    //       {
-    //         player: {
-    //           name: "Justin",
-    //           id: 2,
-    //         },
-    //         text: "Me. I am.",
-    //         picks: [
-    //           2, 3, 4, 5
-    //         ]
-    //       },
-    //     ]
-    //   }
-    // ]
+    questions: [
+      //   {
+      //     hotsetPlayer: {
+      //       name: "Justin",
+      //       id: 2,
+      //     },
+      //     text: "Who are you? Who who, who who?",
+      //     answers: [
+      //       {
+      //         player: {
+      //           name: "Justin",
+      //           id: 2,
+      //         },
+      //         text: "Me. I am.",
+      //         picks: [
+      //           2, 3, 4, 5
+      //         ]
+      //       },
+      //     ]
+      //   }
+      // ]
+    ],
   },
 
   getters: {
 
-    players: ({players}) => {
-      return players.filter(player => player.active)
-    },
+    player: ({players, user}) => players.find(player => player.userId === user.id),
+
+    gameKey: ({game}) => game.key,
+
+    activePlayers: ({players}) => players.filter(player => player.active),
 
     isHost: ({game}) => game.host,
 
     inGame: ({game}) => game.key && game.connected,
 
-    inHotSeat: ({user}) => user.hotseat,
+    hotSeatPlayer: ({players}) => players.find(player => player.hotseat),
+
+    inHotSeat: ({user}, {hotSeatPlayer}) => {
+      try {
+        return user.id === hotSeatPlayer.userId
+      } catch(e) {
+        return false
+      }
+    },
 
     currentQuestion: ({questions}) => questions[questions.length - 1]
 
@@ -64,63 +73,66 @@ export default new Vuex.Store({
 
   mutations: {
 
-  	// addQuestion(state, question){
-  	// 	state.questions.push(question)
-  	// },
+    // setActive({user}){
+    //   user.active = true
+    // },
 
-    setActive({user}){
-      user.active = true
-    },
+    // ADD_PLAYER(state, player){
+    //   // Vue.set(player, 'order', players.length)
+    //   // Vue.set(player, 'score', 0)
+    //   // Vue.set(player, 'hotseat', players.length == 0)
+    //   // players.push(player)
+    //   console.log(state)
+    // },
+    // set everything for a new game
 
-    updateUsername({user}, userName){
-      user.name = userName
-    },
-
-    joinGame({game, user}, data) {
+    NEW_GAME({game, user}, data) {
       // set userid
       user.id = data.userId
-      user.name = data.name
       // set game options
-      game.id = data.userId
       game.key = data.gameKey
-      game.host = data.host
-      game.score = 0
+      game.host = true
       game.connected = true
     },
 
-    addQuestion({questions}, question){
+    // 
+    // Socket Listeners
+    // 
+
+    // a new question has been added
+    SOCKET_QUESTION_ADDED({questions}, question){
       questions.push(question)
     },
-
+    // the user has quit the game. reset everything
     SOCKET_GAME_QUIT({game, user, players, questions}) {
+
+    },
+    // another player has joined, add them to the game
+    SOCKET_PLAYER_JOINED(store, player) {
       // reset game
-      game = {
+      store.game = {
         host: false,
         key: null,
         score: 0,
         connected: false
       }
       // reset user
-      user = {
+      store.user = {
           id: '',
-          name: '',
           observer: false,
-          hotseat: false,
-          active: false
       }
-      // cler players
-      players = []
+      // clear players
+      store.players = []
       // lear everything
-      questions = []
+      store.questions = []
+      // set player defaults
+      Vue.set(player, 'order', store.players.length)
+      Vue.set(player, 'score', 0)
+      Vue.set(player, 'hotseat', store.players.length == 0)
+      Vue.set(player, 'active', false)
+      store.players.push(player)
     },
-
-    SOCKET_PLAYER_JOINED({players}, user) {
-      Vue.set(user, 'order', players.length)
-      Vue.set(user, 'score', 0)
-      Vue.set(user, 'hotseat', players.length == 0)
-      players.push(user)
-    },
-
+    // another player is active this round
     SOCKET_PLAYER_ACTIVATE({players}, user) {
       let player = players.find( player => player.id === user.id )
       player.active = true
@@ -129,36 +141,33 @@ export default new Vuex.Store({
   },
 
   actions: {
-    setUserName({commit}, userName){
-      commit('updateUsername', userName)
-    },
 
-    quitGame({commit}){
-      commit('SOCKET_GAME_QUIT')
-    },
-
-    socket_gameCreated({commit, state}, data) {
-      // the host
-      Vue.set(data, 'host', true)
-      //join the game
-      commit('joinGame', data)
-      // add the player
-      commit('SOCKET_PLAYER_JOINED', state.user)
-    },
-
-    socket_gameJoined({commit, game, user}, data) {
-      Vue.set(data, 'host', false)
-      commit('joinGame', data)
-    },
-
-    activate({commit}){
-      commit('setActive')
-    },
-
-    addQuestion({commit}, question){
-      console.log(question)
-      commit('addQuestion', question)
+    newGame({commit}, data){
+        commit('SOCKET_PLAYER_JOINED', data)
+        commit('NEW_GAME', data)
+      //  return new Promise((resolve, reject) => {
+      //   setTimeout(() => {
+      //   resolve()
+      // }, 4000)
+      // })
     }
+
+    // quitGame({commit}){
+    //   commit('SOCKET_GAME_QUIT')
+    // },
+
+    // activate({commit}){
+    //   commit('setActive')
+    // },
+
+    // joinGame({commit, state}, data) {
+    //   // the host
+    //   Vue.set(data, 'host', true)
+    //   //join the game
+    //   commit('joinGame', data)
+    //   // add the player
+    //   commit('SOCKET_PLAYER_JOINED', state.user)
+    // },
 
   },
 })

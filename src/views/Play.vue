@@ -1,9 +1,10 @@
 <template>
   <div class="gameboard hero is-dark">
     <!-- main navigation and options menu -->
-    <navbar :game="$route.params.gameKey" 
-            :name="user.name" 
-            :score="user.score" 
+    <navbar :game="gameKey"
+            :name="player.name"
+            :score="player.score"
+            :inHotSeat="$store.getters.inHotSeat"
             >
       <template #bar-end>
         <div class="buttons">
@@ -126,7 +127,7 @@
               <div v-show="display.answer">
                 <h3 class="title is-4 has-text-centered">Answer</h3>
                 <h3 class="subtitle is-5 has-text-centered">Waiting for 3 more answers...</h3>
-                <answer :name="user.name" v-show="display.answer" />
+                <answer :name="player.name" v-show="display.answer" />
               </div>
               <div v-show="display.answers">
                 <h3 class="title is-4 has-text-centered">Answers</h3>
@@ -165,7 +166,7 @@ import PlayerOrder from '@/views/game/PlayerOrder'
 import OptionMenu from '@/components/OptionMenu'
 import ConfirmBox from '@/components/ConfirmBox'
 
-import { mapState } from 'vuex'
+import { mapState, mapGetters } from 'vuex'
 
 export default {
 
@@ -186,6 +187,22 @@ export default {
   },
 
   created(){
+    // get room info
+    this.$http.get('/room', {
+      params: {
+        gameKey: this.gameKey
+      }
+    }).then((response) => {
+      if(response.data.room){
+        // get historical room data
+      } else {
+        this.quitGame()
+      }
+    }).catch((error) => {
+      console.log(error, 'error')
+      this.$router.replace("/")
+    })
+
   },
 
   data () {
@@ -210,19 +227,7 @@ export default {
         reorderPlayers: false,
       },
 
-      // user: {
-      //   id: 'xfxxxfs',
-      //   name: "Justin",
-      //   score: 23,
-      //   inHotseat: false,
-      //   gameHost: true
-      // },
-
       game: {
-        
-        key: 'XOW23G',
-        
-        reveal: false,
 
         stage: 0,
 
@@ -242,9 +247,10 @@ export default {
               text: "Write an answer to the Hot Seat card from the perspective of the player in the Hot Seat"
             },
             display: {
+              answerQuestion: false,
               answer: true
             }
-          }, 
+          },
           {
             name: 'vote',
             directions: {
@@ -255,7 +261,7 @@ export default {
               answers: true,
               selectAnswers: true
             }
-          }, 
+          },
           {
             name: 'reveal',
             directions: {
@@ -332,7 +338,7 @@ export default {
 
     currentStage(){
       // hide all display elements
-      this.$set(this.display, 'answer', !!this.currentStage.display.answer)
+      this.$set(this.display, 'answer',  !!this.currentStage.display.answer)
       this.$set(this.display, 'answers', !!this.currentStage.display.answers)
       this.$set(this.display, 'waiting', !!this.currentStage.display.waiting)
     },
@@ -349,7 +355,6 @@ export default {
     '$store.getters.inHotSeat': {
       immediate: true,
       handler(val){
-        console.log(val)
         this.delay(800).then(() => {
           this.display.revealQuestion = val
           this.display.answerQuestion = val
@@ -360,24 +365,38 @@ export default {
     'game.stage': {
       immediate: true,
       handler(val){
-        if(!this.user.active){
-          this.$store.dispatch('activate')
-          this.$socket.client.emit('activate_player', this.user.id)
+        console.log("GAME STAGE", val, this.player.active)
+        if(val === 0 && !this.player.active){
+          console.log("IN HERE")
+          // this.$store.dispatch('activate')
+          this.$socket.client.emit('activate_player', { gameKey: this.gameKey, id: this.player.id })
         }
       }
-    }
+    },
+
+    // questions(newQ, oldQ){
+    //   if(newQ.length > oldQ.length){
+    //     this.advanceStage()
+    //   }
+    // }
 
   },
 
   computed: {
-
+    // get the states from the store
     ...mapState({
-      players: ({players})=> players,
-      questions: ({questions})=> questions,
-      user: ({user})=> user,
-      connected: ({game})=> game.connected
+      questions: ({questions}) => questions,
+      user: ({user}) => user,
+      connected: ({game}) => game.connected,
     }),
 
+    ...mapGetters({
+      player: 'player',
+      gameKey: 'gameKey',
+      players: 'activePlayers',
+    }),
+
+    // the order of hotseat players
     orderedPlayers() {
       return this.players.sort((a, b) => {
         return a.order - b.order
@@ -394,11 +413,17 @@ export default {
 
   },
 
+  sockets: {
+    // listen for the stage advance
+    next_stage(){
+      this.advanceStage()
+    }
+  },
+
   methods: {
 
     answeredQuestion(){
-      
-      this.advanceStage()
+
     },
 
     submitQuestion(question){
@@ -410,11 +435,13 @@ export default {
 
       this.$set(question, 'answers', [])
 
-      this.$store.dispatch('addQuestion', question)
+      this.$socket.client.emit('add_question', { gameKey: this.gameKey, question: question })
 
-      this.display.answerQuestion = false
+      // this.$store.dispatch('addQuestion', question)
 
-      this.advanceStage()
+      // this.display.answerQuestion = false
+
+      // this.advanceStage()
     },
 
     advanceStage(){
@@ -450,7 +477,7 @@ export default {
     },
 
     quitGame(){
-      this.$store.dispatch('quitGame')
+      // this.$store.dispatch('quitGame')
       this.$router.replace('/')
     }
 

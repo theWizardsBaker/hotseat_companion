@@ -4,17 +4,31 @@ import router from './router'
 import store from './store'
 import io from 'socket.io-client'
 import VueSocketIOExt from 'vue-socket.io-extended';
-import axios from './router/axios.js'
+import axios from 'axios'
 import VueAxios from 'vue-axios'
 
 import '@/styles/main.scss'
 
 Vue.config.productionTip = false
 
-
 const socket = io(`${process.env.VUE_APP_SOCKET_BACKEND}`);
 
 Vue.use(VueSocketIOExt, socket, { store });
+
+// Vue.use(VueAxios, Axios)
+// let axios = Axios.create({
+//     baseURL: 
+//     withCredentials: false,
+//     headers: {
+//       'Accept': 'application/json',
+//       'Content-Type': 'application/json',
+//       'Access-Control-Allow-Origin': '*'
+//     },
+//   })
+
+axios.defaults.baseURL = `http://${process.env.VUE_APP_SOCKET_BACKEND}`,
+axios.defaults.headers.common['Content-Type'] = 'application/json'
+axios.defaults.headers.common['Access-Control-Allow-Origin'] = '*'
 
 Vue.use(VueAxios, axios)
 

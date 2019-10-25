@@ -1,5 +1,8 @@
 <template>
-  <nav class="navbar is-black" role="navigation" aria-label="main navigation">
+  <nav class="navbar"
+       :class="[ inHotSeat ? 'is-danger' : 'is-black' ]"
+       role="navigation"
+       aria-label="main navigation">
 
     <div class="navbar-start">
       <!-- navbar items -->
@@ -51,7 +54,8 @@ export default {
     'game',
     'name',
     'score',
-    'showScoreBoard'
+    'showScoreBoard',
+    'inHotSeat'
   ],
 
   data () {
