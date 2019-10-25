@@ -53,43 +53,16 @@
 
 <script>
 export default {
+  
   name: 'scoreboard',
+
+  props: ['players'],
+
   data () {
     return {
-      players: [
-        {
-          hotseat: false,
-          name: 'Stephanie',
-          score: 30,
-          scoreChange: 3
-        },
-        {
-          hotseat: false,
-          name: 'Carl',
-          score: 30,
-          scoreChange: 0
-        },
-        {
-          hotseat: true,
-          name: 'Claire',
-          score: 30,
-          scoreChange: 0
-        },
-        {
-          hotseat: false,
-          name: 'Trevor',
-          score: 30,
-          scoreChange: 0
-        },
-        {
-          hotseat: false,
-          name: 'Daniell',
-          score: 30,
-          scoreChange: 0
-        },
-      ]
     }
   }
+
 }
 </script>
 
@@ -112,6 +85,7 @@ export default {
       }
 
       .panel-section {
+        text-align: center;
         align-items: center;
         color: #363636;
         display: flex;

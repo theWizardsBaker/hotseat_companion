@@ -6,9 +6,9 @@
         <card :display="false" />
       </div> -->
       <div class="column is-narrow old-questions" v-for="question in questions">
-        <card :display="question.display">
+        <card :display="true">
           <template #title>
-            {{question.user}}
+            {{question.hotSeatPlayer.name}}
           </template>
           <template #content>
             {{question.text}}
@@ -33,22 +33,10 @@ export default {
   	Card,
   },
 
+  props: ['questions'],
+
   data () {
     return {
-      questions: [
-        {
-          user: "Justin",
-          text: "Who is your worst nighmare",
-          display: true,
-        },
-        {
-          user: "Justin",
-          text: "Who is your worst nighmare",
-          display: true,
-        },
-
-
-      ]
     }
   },
   

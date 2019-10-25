@@ -67,6 +67,11 @@
 			  	</card>
 		  	</div>
 	  	</div>
+	  	<div class="">
+	  		<h3 class="title is-4 has-text-danger has-text-centered">
+	  			{{errorMessage}}
+	  		</h3>
+	  	</div>
     </div>
   </div>
 </template>
@@ -83,6 +88,7 @@ export default {
   },
 
   mounted() {
+
   	for(let i = 0; i < this.gameOptions.length; i++){
 	  	this.delay(800 + (i * 300)).then(() => {
 		  	this.$set(this.gameOptions[i], 'display', true)
@@ -91,19 +97,10 @@ export default {
 
   },
 
-  created(){
-  	this.$socket.on('game_created', () => {
-  		console.log("YO DE YO DE OOOOO")
-  	})
-  },
-
-  beforeDestory(){
-
-  },
-  
   data () {
     return {
     	gameSelected: false,
+    	errorMessage: '',
       gameOptions: [
         {
           name: 'Create Game',
@@ -113,6 +110,7 @@ export default {
           display: false,
 		    	userName: '',
 		    	selected: false,
+		    	spectate: false
         },
         {
           name: 'Join Game',
@@ -123,6 +121,7 @@ export default {
         	gameKey: '',
 		    	userName: '',
 		    	selected: false,
+		    	spectate: false
         },
         {
           name: 'Spectate Game',
@@ -131,22 +130,46 @@ export default {
           error: false,
           display: false,
         	gameKey: '',
-        	selected: false
+        	selected: false,
+        	spectate: true
         }
       ]
     }
   },
 
   computed: {
+
   	selectedOption(){
-  		return this.gameOptions.findOne((option) => option.selected)
+  		return this.gameOptions.find((opt) => opt.selected)
   	}
+
+  },
+
+  sockets: {
+
+  	game_refused(){
+  		this.gameSelected = false
+  		this.selectedOption.error = true
+  		this.selectedOption.selected = false
+  		this.errorMessage = "Game does not exist"
+  	},
+
+  	game_created(data){
+			this.$router.push({
+  			name: 'play',
+  			params: {
+  				gameKey: data.gameKey
+  			},
+  		})
+  	}
+
   },
 
   methods: {
 
   	handleSelection(option){
 
+  		this.errorMessage = ''
 			option.error = false
 
   		if( option.hasOwnProperty('userName') ) {
@@ -158,38 +181,19 @@ export default {
   		}
 
   		if(!option.error){
+  			// triger the game has been selected
 	  		this.gameSelected = true
-  			this[option.action + 'Game']()
+	  		// select this option as the one selected
+	  		option.selected = true
+  			// this[option.action + 'Game']()
+  			// get our options
+  			let data = { userName: option.userName, gameKey: option.gameKey, spectate: option.spectate }
+  			// what action we'll send to the socket
+  			let action = option.action === 'create' ? 'create_game' : 'join_game'
+  			// emit to socket
+		  	this.$socket.client.emit(action, data)
   		}
   	},
-
-		createGame(){
-			console.log("create")
-	  	this.$socket.emit('create_game', { userName: option.userName })
-  	},
-
-		joinGame(){
-			console.log("join")
-	  	this.$socket.emit('join_game', { userName: option.userName, gameKey: option.gameKey, spectate: false })
-  	},
-
-		spectateGame(){
-			console.log("spectate")
-	  	this.$socket.emit('join_game', { userName: option.userName, gameKey: option.gameKey, spectate: true })
-  	},
-/*
-  	navigateToGame(userId, userName, gameKey){
-  		this.$router.push({
-  			name: 'play',
-  			query: {
-  				game: selectedOption.gameKey
-  			},
-  			params: {
-  				id: userId,
-  				name: userName
-  			}
-  		})
-  	}*/
 
   }
 }

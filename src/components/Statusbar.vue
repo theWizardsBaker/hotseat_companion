@@ -3,7 +3,7 @@
     <div class="navbar-start">
       <!-- navbar items -->
       <div class="navbar-item">
-        <h3 class="title is-marginless is-paddingless is-4 has-text-light">{{name}}</h3>
+        <h3 class="title is-marginless is-paddingless is-4 has-text-light">{{game}}</h3>
       </div>
       <div class="navbar-item">
         <span class="tag is-success is-medium is-rounded">
@@ -26,10 +26,10 @@
 
 <script>
 export default {
-  name: 'titlebar',
+  name: 'statusbar',
 
   props: [
-    'name',
+    'game',
     'score'
   ],
 

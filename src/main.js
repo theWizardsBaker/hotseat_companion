@@ -2,24 +2,21 @@ import Vue from 'vue'
 import App from './App.vue'
 import router from './router'
 import store from './store'
-import VueSocketIO from 'vue-socket.io'
+import io from 'socket.io-client'
+import VueSocketIOExt from 'vue-socket.io-extended';
+import axios from './router/axios.js'
+import VueAxios from 'vue-axios'
 
 import '@/styles/main.scss'
 
 Vue.config.productionTip = false
 
-// Vue.use(VueSocketIO, `//${process.env.SOCKET_BACKEND}`, store);
 
-Vue.use(new VueSocketIO({
-    debug: process.env.NODE_ENV === 'development',
-    connection: `${process.env.VUE_APP_SOCKET_BACKEND}`, //options object is Optional
-    vuex: {
-      store,
-      actionPrefix: "SOCKET_",
-      mutationPrefix: "SOCKET_"
-    }
-  })
-);
+const socket = io(`${process.env.VUE_APP_SOCKET_BACKEND}`);
+
+Vue.use(VueSocketIOExt, socket, { store });
+
+Vue.use(VueAxios, axios)
 
 Vue.filter('capitalize', function (value) {
   if (!value) return ''

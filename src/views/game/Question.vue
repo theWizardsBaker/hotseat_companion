@@ -5,11 +5,11 @@
         <div class="column is-narrow ">
           <card :display="reveal">
             <template #title>
-              {{question.user}}
+              <slot name="title">{{question.user}}</slot>
             </template>
             <template #content>
               <div v-if="answer">
-                <textarea class="textarea" v-model="question.text">
+                <textarea class="textarea" placeholder="Type question here" v-model="question.text">
                 </textarea>
                 <p class="help has-text-grey-light">{{characterCount}}/{{question.length}}</p>
                 <br/>
@@ -19,7 +19,9 @@
               </div>
             </template>
             <template #footer>
-              <button class="button is-success is-fullwidth" v-if="answer">
+              <button class="button is-success is-fullwidth" 
+                      v-if="answer"
+                      @click="answerQuestion">
                 Reveal
               </button>
             </template>
@@ -43,14 +45,14 @@ export default {
 
   props: [
     'reveal',
-    'answer'
+    'answer',
   ],
 
   data () {
     return {
       question: {
-        user: "Justin",
-        text: "Who is your worst nighmare",
+        user: "",
+        text: "",
         length: 255,
       },
     }
@@ -71,8 +73,9 @@ export default {
   },
 
   methods: {
-  	handleSelection(option){
-
+  	answerQuestion(){
+      console.log('in question', this.question)
+      this.$emit('answered', this.question)
   	}
   }
 }

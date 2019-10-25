@@ -1,7 +1,7 @@
 <template>
   <div class="gameboard hero is-dark">
     <!-- main navigation and options menu -->
-    <navbar :game="game.key" 
+    <navbar :game="$route.params.gameKey" 
             :name="user.name" 
             :score="user.score" 
             >
@@ -85,11 +85,15 @@
                 <h3 class="title is-4 has-text-centered">Question</h3>
                 <div v-show="!display.questionHistory">
                   <!-- question -->
-                  <question :reveal="display.revealQuestion" :answer="user.inHotseat" />
-                  <div>
+                  <question :reveal="display.revealQuestion"
+                            :answer="display.answerQuestion"
+                            @answered="submitQuestion"
+                            />
+                  <div v-show="questions.length > 1">
                     <!-- show previous -->
                     <button class="button is-small is-rounded is-outlined is-light is-flex is-centered"
-                            @click="display.questionHistory = !display.questionHistory">
+                            @click="display.questionHistory = !display.questionHistory"
+                            >
                       <span class="icon">
                         <i class="fa fa-arrow-left"></i>
                       </span>
@@ -101,7 +105,7 @@
                 </div>
                 <div v-show="display.questionHistory">
                   <!-- questions -->
-                  <questions/>
+                  <questions :questions="questions"/>
                   <br/>
                   <div>
                     <button class="button is-light is-small is-rounded is-outlined is-flex is-centered"
@@ -134,12 +138,12 @@
           <!-- scoreboards -->
           <transition name="slide-right">
             <div class="column is-4-desktop is-hidden-touch" v-show="display.scoreboard">
-              <score-board :players="game.players" />
+              <score-board :players="players" />
             </div>
           </transition>
           <transition name="slide-right">
             <div class="is-hidden-desktop floating-scoreboard" v-show="display.scoreboard">
-              <score-board :players="game.players" />
+              <score-board :players="players" />
             </div>
           </transition>
         </div>
@@ -160,6 +164,8 @@ import Answer from '@/views/game/Answer'
 import PlayerOrder from '@/views/game/PlayerOrder'
 import OptionMenu from '@/components/OptionMenu'
 import ConfirmBox from '@/components/ConfirmBox'
+
+import { mapState } from 'vuex'
 
 export default {
 
@@ -186,9 +192,10 @@ export default {
     return {
 
       display: {
-        scoreboard: true,
+        scoreboard: false,
         hideQuestion: false,
         questionHistory: false,
+        answerQuestion: false,
         revealQuestion: false,
         answer: false,
         answers: false,
@@ -203,13 +210,13 @@ export default {
         reorderPlayers: false,
       },
 
-      user: {
-        id: 'xfxxxfs',
-        name: "Justin",
-        score: 23,
-        inHotseat: false,
-        gameHost: true
-      },
+      // user: {
+      //   id: 'xfxxxfs',
+      //   name: "Justin",
+      //   score: 23,
+      //   inHotseat: false,
+      //   gameHost: true
+      // },
 
       game: {
         
@@ -272,51 +279,6 @@ export default {
           }
         ],
 
-        players: [
-          {
-            id: 2,
-            name: 'Justin',
-            score: 20,
-            roundPoints: 3,
-            order: 0
-          },
-          {
-            id: 3,
-            name: 'Stephanie',
-            score: 26,
-            roundPoints: 0,
-            order: 1
-          },
-          {
-            id: 4,
-            name: 'Carl',
-            score: 22,
-            roundPoints: 7,
-            order: 2
-          },
-          {
-            id: 5,
-            name: 'Claire',
-            score: 20,
-            roundPoints: 3,
-            order: 3
-          },
-          {
-            id: 6,
-            name: 'Danielle',
-            score: 10,
-            roundPoints: 4,
-            order: 4
-          },
-          {
-            id: 7,
-            name: 'Kendra',
-            score: 20,
-            roundPoints: 2,
-            order: 5
-          },
-        ],
-
         options: [
           {
             text: 'Toggle Question Display',
@@ -340,58 +302,130 @@ export default {
           }
         ],
 
-        questions: [
-          {
-            hotsetPlayer: {
-              name: "Justin",
-              id: 2,
-            },
-            text: "Who are you? Who who, who who?",
-            answers: [
-              {
-                player: {
-                  name: "Justin",
-                  id: 2,
-                },
-                text: "Me. I am.",
-                picks: [
-                  2, 3, 4, 5
-                ]
-              },
-            ]
-          }
-        ]
+        // questions: [
+        //   {
+        //     hotsetPlayer: {
+        //       name: "Justin",
+        //       id: 2,
+        //     },
+        //     text: "Who are you? Who who, who who?",
+        //     answers: [
+        //       {
+        //         player: {
+        //           name: "Justin",
+        //           id: 2,
+        //         },
+        //         text: "Me. I am.",
+        //         picks: [
+
+        //           2, 3, 4, 5
+        //         ]
+        //       },
+        //     ]
+        //   }
+        // ]
       }
     }
   },
 
   watch: {
+
     currentStage(){
       // hide all display elements
       this.$set(this.display, 'answer', !!this.currentStage.display.answer)
       this.$set(this.display, 'answers', !!this.currentStage.display.answers)
       this.$set(this.display, 'waiting', !!this.currentStage.display.waiting)
+    },
+
+    connected: {
+      immediate: true,
+      handler(val){
+        if(!val){
+          this.quitGame()
+        }
+      }
+    },
+
+    '$store.getters.inHotSeat': {
+      immediate: true,
+      handler(val){
+        console.log(val)
+        this.delay(800).then(() => {
+          this.display.revealQuestion = val
+          this.display.answerQuestion = val
+        })
+      }
+    },
+
+    'game.stage': {
+      immediate: true,
+      handler(val){
+        if(!this.user.active){
+          this.$store.dispatch('activate')
+          this.$socket.client.emit('activate_player', this.user.id)
+        }
+      }
     }
+
   },
 
   computed: {
+
+    ...mapState({
+      players: ({players})=> players,
+      questions: ({questions})=> questions,
+      user: ({user})=> user,
+      connected: ({game})=> game.connected
+    }),
+
     orderedPlayers() {
-      return this.game.players.sort((a, b) => {
+      return this.players.sort((a, b) => {
         return a.order - b.order
       })
     },
-    isHost(){
-      return false
-    },
+
     hotSeatPlayer(){
-      return this.game.players[2]
+      return this.players.find((player) => player.hotseat)
     },
+
     currentStage(){
       return this.game.stages[this.game.stage]
     }
+
   },
 
   methods: {
+
+    answeredQuestion(){
+      
+      this.advanceStage()
+    },
+
+    submitQuestion(question){
+
+      this.$set(question, 'hotSeatPlayer', {
+        name: this.user.name,
+        userId: this.user.id
+      })
+
+      this.$set(question, 'answers', [])
+
+      this.$store.dispatch('addQuestion', question)
+
+      this.display.answerQuestion = false
+
+      this.advanceStage()
+    },
+
+    advanceStage(){
+      let len = this.game.stages.length
+
+      if(this.game.stage === len - 1){
+        this.game.stage = 0
+      } else {
+        this.game.stage++
+      }
+    },
 
     handleOptionClick(action){
       // set point maximum
@@ -416,7 +450,8 @@ export default {
     },
 
     quitGame(){
-
+      this.$store.dispatch('quitGame')
+      this.$router.replace('/')
     }
 
   }

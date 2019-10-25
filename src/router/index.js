@@ -12,17 +12,17 @@ const routes = [
     component: GameSelect
   },
   {
-    path: '/play',
+    path: '/play/:gameKey',
     name: 'play',
     component: () => import(/* webackChunkName: "play" */ '../views/Play.vue'),
     meta: { requiresAuth: true },
-    beforeEnter: (to, from, next) => {
-      if (store.getters.inGame) {
-        next()
-      } else {
-        next("/")
-      }
-    }
+    // beforeEnter: (to, from, next) => {
+    //   if (store.getters.inGame) {
+    //     next()
+    //   } else {
+    //     next("/")
+    //   }
+    // }
   },
   {
     path: "*",
@@ -30,8 +30,6 @@ const routes = [
     redirect: { name: 'gameselect' }
   }
 ]
-
-
 
 const router = new VueRouter({
   mode: 'history',
