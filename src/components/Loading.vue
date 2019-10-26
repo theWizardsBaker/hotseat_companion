@@ -1,6 +1,8 @@
 <template>
-  <div class="loader">
-    Loading...
+  <div class="load-container">
+    <div class="loader">
+      Loading...
+    </div>
   </div>
 </template>
 
@@ -16,6 +18,11 @@ export default {
 </script>
 
 <style scoped lang="scss">
+.load-container {
+  height: 100vh;
+  padding-top: 10em;
+}
+
 .loader,
 .loader:before,
 .loader:after {

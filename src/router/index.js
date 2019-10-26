@@ -15,14 +15,14 @@ const routes = [
     path: '/play/:gameKey',
     name: 'play',
     component: () => import(/* webackChunkName: "play" */ '../views/Play.vue'),
-    // meta: { requiresAuth: true },
-    // beforeEnter: (to, from, next) => {
-    //   if (store.getters.inGame) {
-    //     next()
-    //   } else {
-    //     next("/")
-    //   }
-    // }
+    meta: { requiresAuth: true },
+    beforeEnter: (to, from, next) => {
+      if (store.getters.inGame) {
+        next()
+      } else {
+        next("/")
+      }
+    }
   },
   {
     path: "*",

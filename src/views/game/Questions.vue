@@ -1,14 +1,10 @@
 <template>
   <div class="hero is-medium">
-
     <div class="questions columns is-mobile">
-<!--       <div class="column is-narrow current-question">
-        <card :display="false" />
-      </div> -->
       <div class="column is-narrow old-questions" v-for="question in questions">
         <card :display="true">
           <template #title>
-            {{question.hotSeatPlayer.name}}
+            {{question.user}}
           </template>
           <template #content>
             {{question.text}}
@@ -18,7 +14,6 @@
         </card>
       </div>
     </div>
-
   </div>
 </template>
 

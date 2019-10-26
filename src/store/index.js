@@ -51,7 +51,10 @@ export default new Vuex.Store({
 
     gameKey: ({game}) => game.key,
 
-    activePlayers: ({players}) => players.filter(player => player.active),
+    activePlayers: ({players}) => {
+      let activePlayers = players.filter(player => player.active)
+      return activePlayers.sort((a, b) => a.order - b.order)
+    },
 
     isHost: ({game}) => game.host,
 
@@ -67,8 +70,15 @@ export default new Vuex.Store({
       }
     },
 
-    currentQuestion: ({questions}) => questions[questions.length - 1]
+    currentQuestion: ({questions}) => questions[questions.length - 1],
 
+    answersRemaining: (state, {currentQuestion, activePlayers}) => {
+      if(currentQuestion && activePlayers){
+        return activePlayers.length - currentQuestion.answers.length
+      } else {
+        return 0
+      }
+    }
   },
 
   mutations: {
@@ -95,14 +105,22 @@ export default new Vuex.Store({
       game.connected = true
     },
 
-    // 
+    //
     // Socket Listeners
-    // 
+    //
+
+    // a new question has been added
+    SOCKET_ANSWER_ADDED({questions}, answer){
+      Vue.set(answer, 'picks', [])
+      questions[questions.length - 1].answers.push(answer)
+    },
 
     // a new question has been added
     SOCKET_QUESTION_ADDED({questions}, question){
+      Vue.set(question, 'answers', [])
       questions.push(question)
     },
+
     // the user has quit the game. reset everything
     SOCKET_GAME_QUIT({game, user, players, questions}) {
 
@@ -132,10 +150,16 @@ export default new Vuex.Store({
       Vue.set(player, 'active', false)
       store.players.push(player)
     },
+
     // another player is active this round
     SOCKET_PLAYER_ACTIVATE({players}, user) {
       let player = players.find( player => player.id === user.id )
       player.active = true
+    },
+
+    // remove quitter
+    SOCKET_PLAYER_QUIT({players}, user) {
+      players = players.filter( player => player.id === user.id )
     },
 
   },

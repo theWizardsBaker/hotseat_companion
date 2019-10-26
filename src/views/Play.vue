@@ -1,152 +1,164 @@
 <template>
   <div class="gameboard hero is-dark">
-    <!-- main navigation and options menu -->
-    <navbar :game="gameKey"
-            :name="player.name"
-            :score="player.score"
-            :inHotSeat="$store.getters.inHotSeat"
-            >
-      <template #bar-end>
-        <div class="buttons">
-          <button class="button is-medium" 
-                  :class="{ 'is-light': popup.show, 'is-dark': !popup.show }" 
-                  @click="popup.show = true; popup.showMenu = true">
-            <span class="icon">
-              <i class="fa fa-gear" aria-hidden="true"></i>
-            </span>
-          </button>
-          <button class="button is-medium"
-                  :class="{ 'is-light': display.scoreboard, 'is-dark': !display.scoreboard }" 
-                  @click="display.scoreboard = !display.scoreboard">
-            <span class="icon">
-              <i class="fa fa-bars" aria-hidden="true"></i>
-            </span>
-          </button>
+    <div v-if="loaded">
+      <!-- main navigation and options menu -->
+      <navbar :game="gameKey"
+              :name="player.name"
+              :score="player.score"
+              :inHotSeat="$store.getters.inHotSeat"
+              >
+        <template #bar-end>
+          <div class="buttons">
+            <button class="button is-medium" 
+                    :class="{ 'is-light': popup.show, 'is-dark': !popup.show }" 
+                    @click="popup.show = true; popup.showMenu = true">
+              <span class="icon">
+                <i class="fa fa-gear" aria-hidden="true"></i>
+              </span>
+            </button>
+            <button class="button is-medium"
+                    :class="{ 'is-light': display.scoreboard, 'is-dark': !display.scoreboard }" 
+                    @click="display.scoreboard = !display.scoreboard">
+              <span class="icon">
+                <i class="fa fa-bars" aria-hidden="true"></i>
+              </span>
+            </button>
+          </div>
+        </template>
+      </navbar>
+
+      <!-- show the game actions -->
+      <titlebar :title="currentStage.directions.title" 
+                :text="currentStage.directions.text" />
+
+      <!-- pop up helper -->
+      <popup :display="popup.show" @close="popup.show = false; popup.showMenu = false">
+        <!-- options menu -->
+        <option-menu :options="game.options"
+                     @optionClick="handleOptionClick"
+                     v-if="popup.showMenu">
+          <template #title>Options</template>
+        </option-menu>
+        <!-- confirm quit -->
+        <div class="content" v-else-if="popup.confirmQuit">
+          <confirm-box @confirm="quitGame"
+                       @cancel="popup.show = false; popup.confirmQuit = false">
+            Are you sure you want to quit?
+          </confirm-box>
         </div>
-      </template>
-    </navbar>
-
-    <!-- show the game actions -->
-    <titlebar :title="currentStage.directions.title" 
-              :text="currentStage.directions.text" />
-
-    <!-- pop up helper -->
-    <popup :display="popup.show" @close="popup.show = false; popup.showMenu = false">
-      <!-- options menu -->
-      <option-menu :options="game.options"
-                   @optionClick="handleOptionClick"
-                   v-if="popup.showMenu">
-        <template #title>Options</template>
-      </option-menu>
-      <!-- confirm quit -->
-      <div class="content" v-else-if="popup.confirmQuit">
-        <confirm-box @confirm="quitGame"
-                     @cancel="popup.show = false; popup.confirmQuit = false">
-          Are you sure you want to quit?
-        </confirm-box>
-      </div>
-      <!-- player order -->
-      <div v-else-if="popup.reorderPlayers">
-        <player-order :players="game.players"
-                      @complete="popup.show = false; popup.reorderPlayers = false"/>
-      </div>
-      <div v-else-if="popup.scoring" class="section has-text-black">
-        <div class="panel">
-          <p class="panel-heading">
-            Scoring
-          </p>
-          <div class="panel-block">
-            <table class="table is-fullwidth is-striped">
-              <tr>
-                <th>1 point</th>
-                <td>Each player that guesses your answer</td>
-              </tr>
-              <tr>
-                <th>2 points</th>
-                <td>Guessing the player in the Hot Seat’s answer correctly</td>
-              </tr>
-              <tr>
-                <th>4 points</th>
-                <td>Responding with the same answer as the player in the Hot Seat</td>
-              </tr>
-            </table>
+        <!-- player order -->
+        <div v-else-if="popup.reorderPlayers">
+          <player-order :players="game.players"
+                        @complete="popup.show = false; popup.reorderPlayers = false"/>
+        </div>
+        <div v-else-if="popup.scoring" class="section has-text-black">
+          <div class="panel">
+            <p class="panel-heading">
+              Scoring
+            </p>
+            <div class="panel-block">
+              <table class="table is-fullwidth is-striped">
+                <tr>
+                  <th>1 point</th>
+                  <td>Each player that guesses your answer</td>
+                </tr>
+                <tr>
+                  <th>2 points</th>
+                  <td>Guessing the player in the Hot Seat’s answer correctly</td>
+                </tr>
+                <tr>
+                  <th>4 points</th>
+                  <td>Responding with the same answer as the player in the Hot Seat</td>
+                </tr>
+              </table>
+            </div>
           </div>
         </div>
-      </div>
-    </popup>
+      </popup>
 
-    <!-- the gameboard -->
-    <div class="game">
-      <div class="game-display">
-        <!-- game display -->
-        <div class="columns">
-          <div class="column" >
-            <!-- question section -->
-            <div class="section" v-show="!display.hideQuestion">
-                <h3 class="title is-4 has-text-centered">Question</h3>
-                <div v-show="!display.questionHistory">
-                  <!-- question -->
-                  <question :reveal="display.revealQuestion"
-                            :answer="display.answerQuestion"
-                            @answered="submitQuestion"
-                            />
-                  <div v-show="questions.length > 1">
-                    <!-- show previous -->
-                    <button class="button is-small is-rounded is-outlined is-light is-flex is-centered"
-                            @click="display.questionHistory = !display.questionHistory"
-                            >
-                      <span class="icon">
-                        <i class="fa fa-arrow-left"></i>
-                      </span>
-                      <span>
-                        Previous Questions
-                      </span>
-                    </button>
+      <!-- the gameboard -->
+      <div class="game">
+        <div class="game-display">
+          <!-- game display -->
+          <div class="columns">
+            <div class="column" >
+              <!-- question section -->
+              <div class="section" v-show="!display.hideQuestion">
+                  <h3 class="title is-4 has-text-centered">Question</h3>
+                  <div v-show="!display.questionHistory">
+                    <!-- question -->
+                    <question :reveal="display.revealQuestion"
+                              :answer="display.answerQuestion"
+                              @answered="submitQuestion"
+                              />
+                    <div v-show="questions.length > 1">
+                      <!-- show previous -->
+                      <button class="button is-small is-rounded is-outlined is-light is-flex is-centered"
+                              @click="display.questionHistory = !display.questionHistory"
+                              >
+                        <span class="icon">
+                          <i class="fa fa-arrow-left"></i>
+                        </span>
+                        <span>
+                          Previous Questions
+                        </span>
+                      </button>
+                    </div>
                   </div>
-                </div>
-                <div v-show="display.questionHistory">
-                  <!-- questions -->
-                  <questions :questions="questions"/>
-                  <br/>
-                  <div>
-                    <button class="button is-light is-small is-rounded is-outlined is-flex is-centered"
-                            @click="display.questionHistory = !display.questionHistory">
-                      <span class="icon">
-                        <i class="fa fa-close"></i>
-                      </span>
-                      <span>
-                        Back to Question
-                      </span>
-                    </button>
+                  <div v-show="display.questionHistory">
+                    <!-- questions -->
+                    <questions :questions="questions"/>
+                    <br/>
+                    <div>
+                      <button class="button is-light is-small is-rounded is-outlined is-flex is-centered"
+                              @click="display.questionHistory = !display.questionHistory">
+                        <span class="icon">
+                          <i class="fa fa-close"></i>
+                        </span>
+                        <span>
+                          Back to Question
+                        </span>
+                      </button>
+                    </div>
                   </div>
+              </div>
+              <!-- answer section -->
+              <div class="section">
+                <br/>
+                <div v-show="display.answer">
+                  <h3 class="title is-4 has-text-centered">
+                    Answer
+                  </h3>
+                  <h3 class="subtitle is-5 has-text-centered">
+                    Waiting on {{answersRemaining}} more answer{{(answersRemaining === 1 ? '' : 's')}}
+                  </h3>
+                  <answer :name="player.name" 
+                          v-show="display.answer" 
+                          @answer="submitAnswer"/>
                 </div>
-            </div>
-            <!-- answer section -->
-            <div class="section">
-              <br/>
-              <div v-show="display.answer">
-                <h3 class="title is-4 has-text-centered">Answer</h3>
-                <h3 class="subtitle is-5 has-text-centered">Waiting for 3 more answers...</h3>
-                <answer :name="player.name" v-show="display.answer" />
-              </div>
-              <div v-show="display.answers">
-                <h3 class="title is-4 has-text-centered">Answers</h3>
-                <h3 class="subtitle is-5 has-text-centered">Waiting for 3 more answers...</h3>
-                <answers :shrink="display.scoreboard"  :select="true"/>
+                <div v-show="display.answers">
+                  <h3 class="title is-4 has-text-centered">
+                    Answers
+                  </h3>
+                  <h3 class="subtitle is-5 has-text-centered">
+                    Waiting on {{answersRemaining}} more selection{{(answersRemaining === 1 ? '' : 's')}}
+                  </h3>
+                  <answers :shrink="display.scoreboard"  :select="true"/>
+                </div>
               </div>
             </div>
+            <!-- scoreboards -->
+            <transition name="slide-right">
+              <div class="column is-4-desktop is-hidden-touch" v-show="display.scoreboard">
+                <score-board :players="players" />
+              </div>
+            </transition>
+            <transition name="slide-right">
+              <div class="is-hidden-desktop floating-scoreboard" v-show="display.scoreboard">
+                <score-board :players="players" />
+              </div>
+            </transition>
           </div>
-          <!-- scoreboards -->
-          <transition name="slide-right">
-            <div class="column is-4-desktop is-hidden-touch" v-show="display.scoreboard">
-              <score-board :players="players" />
-            </div>
-          </transition>
-          <transition name="slide-right">
-            <div class="is-hidden-desktop floating-scoreboard" v-show="display.scoreboard">
-              <score-board :players="players" />
-            </div>
-          </transition>
         </div>
       </div>
     </div>
@@ -195,18 +207,21 @@ export default {
     }).then((response) => {
       if(response.data.room){
         // get historical room data
+        this.loaded = true
       } else {
         this.quitGame()
       }
     }).catch((error) => {
       console.log(error, 'error')
-      this.$router.replace("/")
+      // this.$router.replace("/")
     })
 
   },
 
   data () {
     return {
+
+      loaded: false,
 
       display: {
         scoreboard: false,
@@ -338,9 +353,19 @@ export default {
 
     currentStage(){
       // hide all display elements
-      this.$set(this.display, 'answer',  !!this.currentStage.display.answer)
+      this.$set(this.display,  'answer', !!this.currentStage.display.answer )
       this.$set(this.display, 'answers', !!this.currentStage.display.answers)
       this.$set(this.display, 'waiting', !!this.currentStage.display.waiting)
+      this.$set(this.display, 'answerQuestion', !!this.currentStage.display.answerQuestion)
+    },
+
+    loaded: {
+      immediate: true,
+      handler(val){
+        // if(!val){
+          this.$emit('toggleLoading')
+        // }
+      }
     },
 
     connected: {
@@ -365,20 +390,13 @@ export default {
     'game.stage': {
       immediate: true,
       handler(val){
-        console.log("GAME STAGE", val, this.player.active)
-        if(val === 0 && !this.player.active){
+        if(val === 0 && this.player && !this.player.active){
           console.log("IN HERE")
           // this.$store.dispatch('activate')
           this.$socket.client.emit('activate_player', { gameKey: this.gameKey, id: this.player.id })
         }
       }
     },
-
-    // questions(newQ, oldQ){
-    //   if(newQ.length > oldQ.length){
-    //     this.advanceStage()
-    //   }
-    // }
 
   },
 
@@ -394,6 +412,8 @@ export default {
       player: 'player',
       gameKey: 'gameKey',
       players: 'activePlayers',
+      currentQuestion: 'currentQuestion',
+      answersRemaining: 'answersRemaining'
     }),
 
     // the order of hotseat players
@@ -411,19 +431,35 @@ export default {
       return this.game.stages[this.game.stage]
     }
 
+
   },
 
   sockets: {
-    // listen for the stage advance
-    next_stage(){
+
+    playerJoined(data){
+      this.$noty.info(data.name + " joined the game", {
+        killer: true,
+        layout: 'topCenter'
+      })
+    },
+
+    question_added(){
       this.advanceStage()
-    }
+    },
+
   },
 
   methods: {
 
-    answeredQuestion(){
-
+    submitAnswer(answerText){
+      let answer = {
+        hotSeatPlayer: {
+          name: this.user.name,
+          userId: this.user.id
+        },
+        answer: answerText
+      }
+      this.$socket.client.emit('add_answer', { gameKey: this.gameKey, answer: answer })
     },
 
     submitQuestion(question){
@@ -433,7 +469,7 @@ export default {
         userId: this.user.id
       })
 
-      this.$set(question, 'answers', [])
+      // this.$set(question, 'answers', [])
 
       this.$socket.client.emit('add_question', { gameKey: this.gameKey, question: question })
 
@@ -478,7 +514,7 @@ export default {
 
     quitGame(){
       // this.$store.dispatch('quitGame')
-      this.$router.replace('/')
+      this.$router.replace({ name: 'gameselect' })
     }
 
   }
@@ -488,6 +524,7 @@ export default {
 <style scoped lang="scss">
 
   @import "@/styles/slide-right-animation.scss";
+  @import "~vuejs-noty/dist/vuejs-noty.css";
 
   .slide-right-enter-active {
     animation: slideInRight .5s;

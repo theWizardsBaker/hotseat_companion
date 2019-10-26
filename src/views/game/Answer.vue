@@ -64,7 +64,7 @@ export default {
 
   methods: {
     lockAnswer(){
-
+      this.$emit('answer', this.answer)
     },
     unlockAnswer(){
 

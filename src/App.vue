@@ -3,7 +3,7 @@
   	<div class="hero is-dark" v-show="isLoading">
 	  	<loading />
     </div>
-    <router-view v-show="!isLoading"/>
+    <router-view v-show="!isLoading" @toggleLoading="isLoading = !isLoading"/>
   </div>
 </template>
 <script>

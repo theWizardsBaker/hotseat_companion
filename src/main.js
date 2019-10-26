@@ -3,7 +3,8 @@ import App from './App.vue'
 import router from './router'
 import store from './store'
 import io from 'socket.io-client'
-import VueSocketIOExt from 'vue-socket.io-extended';
+import VueSocketIOExt from 'vue-socket.io-extended'
+import VueNoty from 'vuejs-noty'
 import axios from 'axios'
 import VueAxios from 'vue-axios'
 
@@ -15,16 +16,7 @@ const socket = io(`${process.env.VUE_APP_SOCKET_BACKEND}`);
 
 Vue.use(VueSocketIOExt, socket, { store });
 
-// Vue.use(VueAxios, Axios)
-// let axios = Axios.create({
-//     baseURL: 
-//     withCredentials: false,
-//     headers: {
-//       'Accept': 'application/json',
-//       'Content-Type': 'application/json',
-//       'Access-Control-Allow-Origin': '*'
-//     },
-//   })
+Vue.use(VueNoty)
 
 axios.defaults.baseURL = `http://${process.env.VUE_APP_SOCKET_BACKEND}`,
 axios.defaults.headers.common['Content-Type'] = 'application/json'
@@ -37,7 +29,6 @@ Vue.filter('capitalize', function (value) {
   value = value.toString()
   return value.charAt(0).toUpperCase() + value.slice(1)
 })
-
 
 Vue.mixin({
   methods: {

@@ -5,17 +5,17 @@
         <div class="column is-narrow ">
           <card :display="reveal">
             <template #title>
-              <slot name="title">{{question.user}}</slot>
+              <slot name="title">{{cardQuestion.user}}</slot>
             </template>
             <template #content>
               <div v-if="answer">
-                <textarea class="textarea" placeholder="Type question here" v-model="question.text">
+                <textarea class="textarea" placeholder="Type Hot Seat question here" v-model="cardQuestion.text">
                 </textarea>
-                <p class="help has-text-grey-light">{{characterCount}}/{{question.length}}</p>
+                <p class="help has-text-grey-light">{{characterCount}}/{{maxLength}}</p>
                 <br/>
               </div>
               <div v-else>
-                {{question.text}}
+                {{cardQuestion.text}}
               </div>
             </template>
             <template #footer>
@@ -46,36 +46,47 @@ export default {
   props: [
     'reveal',
     'answer',
+    'question'
   ],
 
   data () {
     return {
-      question: {
+      maxLength: 255,
+      cardQuestion: {
         user: "",
         text: "",
-        length: 255,
       },
+    }
+  },
+
+  watch: {
+    question: {
+      immediate: true,
+      handler(val) {
+        if(val){
+          this.question = val
+        }
+      }
     }
   },
 
   computed: {
     characterCount(){
-      return this.question.text.length
+      return this.maxLength
     }
   },
 
   watch: {
     characterCount(value){
-      if(value > this.question.length){
-        this.$set(this.question, 'text', this.question.text.substring(0, this.question.length))
+      if(value > this.maxLength){
+        this.$set(this.cardQuestion, 'text', this.cardQuestion.text.substring(0, this.cardQuestion.length))
       }
     }
   },
 
   methods: {
   	answerQuestion(){
-      console.log('in question', this.question)
-      this.$emit('answered', this.question)
+      this.$emit('answered', this.cardQuestion)
   	}
   }
 }
