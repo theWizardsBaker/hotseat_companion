@@ -78,6 +78,7 @@
 
 <script>
 import Card from '@/components/Card.vue'
+import { mapGetters } from 'vuex'
 
 export default {
 
@@ -139,20 +140,25 @@ export default {
 
   watch: {
 
-    '$store.inGame': {
-      immediate: true,
-      handler(val){
-        // if the user is in a game, navigate to the game
-        if(val){
-          this.playGame()
-        }
+    gameKey(val){
+      // if the user is in a game, navigate to the game
+      if(val){
+        this.playGame()
       }
-    }
+    },
+
   },
 
   computed: {
+
+    ...mapGetters([
+      'gameKey',
+    ]),
+
     // find the selected option
-  	selectedOption: () => this.gameOptions.find((opt) => opt.selected)
+  	selectedOption(){
+      return this.gameOptions.find((opt) => opt.selected)
+    }
   },
 
   methods: {
@@ -195,9 +201,10 @@ export default {
             data.userId = response.data.userId
             data.gameKey = response.data.gameKey
             // create the new game
-            this.$store.dispatch('newGame', data).then(() => {
-              this.playGame()
-            }).catch((e) => console.log(e))
+            this.$store.dispatch(option.action === 'create' ? 'newGame' : 'joinGame', data)
+            // .then(() => {
+            //   this.playGame()
+            // }).catch((e) => console.log(e))
           }
         })
   		}
@@ -211,10 +218,10 @@ export default {
     },
 
     showError(message){
-      this.gameSelected = false
       this.selectedOption.error = true
       this.selectedOption.selected = false
       this.errorMessage = message
+      this.gameSelected = false
     },
 
   }

@@ -7,19 +7,21 @@
             <textarea class="textarea" v-model="answer">
             </textarea>
             <p class="help has-text-grey-light">{{characterCount}}/{{length}}</p>
-            <br/>
+            <div class="actions">
+              <div class="field is-grouped is-grouped-centered">
+                <div class="control">
+                  <button class="button is-success"
+                          :class="{ 'is-disabled': lockedIn}"
+                          :disabled="lockedIn"
+                          @click="lockAnswer"
+                          >
+                    Submit Answer
+                  </button>
+                </div>
+              </div>
+            </div>
           </template>
         </guess>
-        <div class="actions">
-          <div class="field is-grouped is-grouped-centered">
-            <div class="control" v-if="lockedIn" @click="unlockAnswer">
-              <button class="button is-light">Cancel</button>
-            </div>
-            <div class="control" v-else @click="lockAnswer">
-              <button class="button is-success">Submit</button>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   </div>
@@ -51,7 +53,7 @@ export default {
   computed: {
     characterCount(){
       return this.answer.length
-    }
+    },
   },
 
   watch: {
@@ -64,7 +66,10 @@ export default {
 
   methods: {
     lockAnswer(){
-      this.$emit('answer', this.answer)
+      if(this.characterCount > 0 && answer.length !== "" && !this.lockedIn){
+        this.lockedIn = true
+        this.$emit('answer', this.answer)
+      }
     },
     unlockAnswer(){
 
@@ -80,7 +85,7 @@ export default {
     text-align: right;
   }
   .actions {
-    padding-bottom: 30px;
+    padding-bottom: 10px;
   }
 }
 </style>

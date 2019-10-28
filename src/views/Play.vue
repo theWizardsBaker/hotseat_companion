@@ -82,8 +82,9 @@
           <!-- game display -->
           <div class="columns">
             <div class="column" >
+
               <!-- question section -->
-              <div class="section" v-show="!display.hideQuestion">
+              <div id="question" class="section" v-show="!display.hideQuestion">
                   <h3 class="title is-4 has-text-centered">Question</h3>
                   <div v-show="!display.questionHistory">
                     <!-- question -->
@@ -122,40 +123,52 @@
                     </div>
                   </div>
               </div>
+
               <!-- answer section -->
-              <div class="section">
+              <div id="answer" class="section">
                 <br/>
                 <div v-show="display.answer">
                   <h3 class="title is-4 has-text-centered">
-                    Answer
+                    Answers
                   </h3>
-                  <h3 class="subtitle is-5 has-text-centered">
+<!--                   <h3 class="subtitle is-5 has-text-centered">
                     Waiting on {{answersRemaining}} more answer{{(answersRemaining === 1 ? '' : 's')}}
-                  </h3>
+                  </h3> -->
                   <answer :name="player.name" 
                           v-show="display.answer" 
                           @answer="submitAnswer"/>
-                </div>
-                <div v-show="display.answers">
-                  <h3 class="title is-4 has-text-centered">
+                <!-- </div> -->
+                <!-- <div v-show="display.answers"> -->
+<!--                   <h3 class="title is-4 has-text-centered">
                     Answers
-                  </h3>
-                  <h3 class="subtitle is-5 has-text-centered">
-                    Waiting on {{answersRemaining}} more selection{{(answersRemaining === 1 ? '' : 's')}}
-                  </h3>
-                  <answers :shrink="display.scoreboard"  :select="true"/>
+                  </h3> -->
+<!--                   <h3 class="subtitle is-5 has-text-centered" v-show="answerPicksRemaining > 0">
+                    Waiting on {{answerPicksRemaining}} more selection{{(answerPicksRemaining === 1 ? '' : 's')}}
+                  </h3> -->
+                  <answers :shrink="display.scoreboard"
+                           :select="!hotSeatPlayer"
+                           :answers="answers"
+                           :player="player"
+                           :players="players"
+                           :answersRemaining="answersRemaining"
+                           @selected="submitSelectedAnswer"/>
+
+                </div>
+                <div class="is-mobile">
+                  <br />
                 </div>
               </div>
+
             </div>
             <!-- scoreboards -->
             <transition name="slide-right">
               <div class="column is-4-desktop is-hidden-touch" v-show="display.scoreboard">
-                <score-board :players="players" />
+                <score-board :players="allPlayers" />
               </div>
             </transition>
             <transition name="slide-right">
               <div class="is-hidden-desktop floating-scoreboard" v-show="display.scoreboard">
-                <score-board :players="players" />
+                <score-board :players="allPlayers" />
               </div>
             </transition>
           </div>
@@ -178,7 +191,7 @@ import PlayerOrder from '@/views/game/PlayerOrder'
 import OptionMenu from '@/components/OptionMenu'
 import ConfirmBox from '@/components/ConfirmBox'
 
-import { mapState, mapGetters } from 'vuex'
+import { mapState, mapGetters, mapActions } from 'vuex'
 
 export default {
 
@@ -199,22 +212,35 @@ export default {
   },
 
   created(){
+
+    if(this.isHost){
+      // if we're the host, just load
+      this.loaded = true
+    } else {
+      // if we're the client, ask the host what the state is
+      this.$socket.client.emit('request_game_state', { gameKey: this.gameKey })
+      // this.$store.dispatch('request_game_state').then(() => {
+      //     this.loaded = true
+      // }).catch( (e) => {
+      //   console.log(e)
+      // })
+    }
     // get room info
-    this.$http.get('/room', {
-      params: {
-        gameKey: this.gameKey
-      }
-    }).then((response) => {
-      if(response.data.room){
-        // get historical room data
-        this.loaded = true
-      } else {
-        this.quitGame()
-      }
-    }).catch((error) => {
-      console.log(error, 'error')
-      // this.$router.replace("/")
-    })
+    // this.$http.get('/room', {
+    //   params: {
+    //     gameKey: this.gameKey
+    //   }
+    // }).then((response) => {
+    //   if(response.data.room){
+    //     // get historical room data
+    //     this.loaded = true
+    //   } else {
+    //     this.quitGame()
+    //   }
+    // }).catch((error) => {
+    //   console.log(error, 'error')
+    //   // this.$router.replace("/")
+    // })
 
   },
 
@@ -244,6 +270,8 @@ export default {
 
       game: {
 
+        round: 0,
+
         stage: 0,
 
         stages: [
@@ -253,7 +281,8 @@ export default {
               title: "Draw",
               text: "Player in the Hot Seat selects and reads a card"
             },
-            display: {}
+            display: {},
+            scrollTo: 'question'
           },
           {
             name: 'answerQuestion',
@@ -264,7 +293,8 @@ export default {
             display: {
               answerQuestion: false,
               answer: true
-            }
+            },
+            scrollTo: 'answer'
           },
           {
             name: 'vote',
@@ -275,7 +305,7 @@ export default {
             display: {
               answers: true,
               selectAnswers: true
-            }
+            },
           },
           {
             name: 'reveal',
@@ -323,28 +353,6 @@ export default {
           }
         ],
 
-        // questions: [
-        //   {
-        //     hotsetPlayer: {
-        //       name: "Justin",
-        //       id: 2,
-        //     },
-        //     text: "Who are you? Who who, who who?",
-        //     answers: [
-        //       {
-        //         player: {
-        //           name: "Justin",
-        //           id: 2,
-        //         },
-        //         text: "Me. I am.",
-        //         picks: [
-
-        //           2, 3, 4, 5
-        //         ]
-        //       },
-        //     ]
-        //   }
-        // ]
       }
     }
   },
@@ -353,10 +361,19 @@ export default {
 
     currentStage(){
       // hide all display elements
-      this.$set(this.display,  'answer', !!this.currentStage.display.answer )
+      this.$set(this.display, 'answer', !!this.currentStage.display.answer)
       this.$set(this.display, 'answers', !!this.currentStage.display.answers)
       this.$set(this.display, 'waiting', !!this.currentStage.display.waiting)
       this.$set(this.display, 'answerQuestion', !!this.currentStage.display.answerQuestion)
+      // if we have a param
+      if(!!this.currentStage.scrollTo){
+        console.log(this.$refs[this.currentStage.scrollTo])
+        // scroll that thing into view
+        // document.getElementById(this.currentStage.scrollTo).scrollIntoView(true)
+        let elm = document.getElementById(this.currentStage.scrollTo)
+        // document.getElementById('app').scrollTop = elm.offsetTop
+        window.scroll({ top: elm.offsetTop + 50, behavior: 'smooth' })
+      }
     },
 
     loaded: {
@@ -372,7 +389,7 @@ export default {
       immediate: true,
       handler(val){
         if(!val){
-          this.quitGame()
+          this.$router.replace({ path: '/' })
         }
       }
     },
@@ -390,57 +407,73 @@ export default {
     'game.stage': {
       immediate: true,
       handler(val){
-        if(val === 0 && this.player && !this.player.active){
-          console.log("IN HERE")
-          // this.$store.dispatch('activate')
-          this.$socket.client.emit('activate_player', { gameKey: this.gameKey, id: this.player.id })
+        if(val === 0){
+          this.activatePlayers()
         }
       }
     },
+
+    answersRemaining(val){
+      if(val === 0){
+        this.advanceStage()
+      }
+    },
+
+    synced: {
+      immediate: true,
+      handler(val, val2){
+        console.log(val, val2)
+        if(!this.loaded && val){
+          this.loaded = val
+        }
+      }
+    }
 
   },
 
   computed: {
     // get the states from the store
     ...mapState({
-      questions: ({questions}) => questions,
       user: ({user}) => user,
       connected: ({game}) => game.connected,
+      questions: ({questions}) => questions,
+      answers: (state, {currentQuestion}) => !!currentQuestion ? currentQuestion.answers : [],
     }),
 
     ...mapGetters({
+      synced: 'synced',
+      isHost: 'isHost',
       player: 'player',
       gameKey: 'gameKey',
       players: 'activePlayers',
+      allPlayers: 'allPlayers',
+      hotSeatPlayer: 'hotSeatPlayer',
       currentQuestion: 'currentQuestion',
-      answersRemaining: 'answersRemaining'
+      answersRemaining: 'answersRemaining',
+      answerPicksRemaining: 'answerPicksRemaining',
     }),
 
-    // the order of hotseat players
-    orderedPlayers() {
-      return this.players.sort((a, b) => {
-        return a.order - b.order
-      })
-    },
-
-    hotSeatPlayer(){
-      return this.players.find((player) => player.hotseat)
+    playerInfo(){
+      if(!!this.player){
+        return {
+          name: this.player.name,
+          userId: this.player.userId
+        }
+      }
     },
 
     currentStage(){
       return this.game.stages[this.game.stage]
     }
 
-
   },
 
   sockets: {
 
-    playerJoined(data){
-      this.$noty.info(data.name + " joined the game", {
-        killer: true,
-        layout: 'topCenter'
-      })
+    player_joined(){
+      if(this.game.stage === 0){
+        this.activatePlayers()
+      }
     },
 
     question_added(){
@@ -451,12 +484,24 @@ export default {
 
   methods: {
 
+    ...mapActions([
+      'activatePlayers',
+      'incrementRound',
+      'incrementStage',
+      'quitGame',
+    ]),
+
+    submitSelectedAnswer(answer){
+      this.$socket.client.emit('select_answer', {
+        gameKey: this.gameKey,
+        answer: answer,
+        player: this.playerInfo
+      })
+    },
+
     submitAnswer(answerText){
       let answer = {
-        hotSeatPlayer: {
-          name: this.user.name,
-          userId: this.user.id
-        },
+        hotSeatPlayer: this.playerInfo,
         answer: answerText
       }
       this.$socket.client.emit('add_answer', { gameKey: this.gameKey, answer: answer })
@@ -464,28 +509,22 @@ export default {
 
     submitQuestion(question){
 
-      this.$set(question, 'hotSeatPlayer', {
-        name: this.user.name,
-        userId: this.user.id
-      })
+      this.$set(question, 'hotSeatPlayer', this.playerInfo)
 
       // this.$set(question, 'answers', [])
 
       this.$socket.client.emit('add_question', { gameKey: this.gameKey, question: question })
 
-      // this.$store.dispatch('addQuestion', question)
-
-      // this.display.answerQuestion = false
-
-      // this.advanceStage()
     },
 
     advanceStage(){
       let len = this.game.stages.length
 
       if(this.game.stage === len - 1){
+        this.incrementRound()
         this.game.stage = 0
       } else {
+        this.incrementStage()
         this.game.stage++
       }
     },
@@ -512,10 +551,10 @@ export default {
 
     },
 
-    quitGame(){
-      // this.$store.dispatch('quitGame')
-      this.$router.replace({ name: 'gameselect' })
-    }
+    // quitGame(){
+    //   this.quitGame()
+    //   // this.$router.replace({ path: '/' })
+    // }
 
   }
 }
