@@ -21,31 +21,8 @@ export default new Vuex.Store({
   	},
 
 	  players: [],
-        // hotseat: false,
-        // active: false,
 
-    questions: [
-      //   {
-      //     hotsetPlayer: {
-      //       name: "Justin",
-      //       id: 2,
-      //     },
-      //     text: "Who are you? Who who, who who?",
-      //     answers: [
-      //       {
-      //         player: {
-      //           name: "Justin",
-      //           id: 2,
-      //         },
-      //         text: "Me. I am.",
-      //         picks: [
-      //           2, 3, 4, 5
-      //         ]
-      //       },
-      //     ]
-      //   }
-      // ]
-    ],
+    questions: [],
   },
 
   getters: {
@@ -79,6 +56,14 @@ export default new Vuex.Store({
 
     currentQuestion: ({questions}) => questions[questions.length - 1],
 
+    answers: (state, {currentQuestion}) => {
+      if(currentQuestion){
+        return currentQuestion.answers
+      } else {
+        return []
+      }
+    },
+
     answersRemaining: (state, {currentQuestion, activePlayers}) => {
       if(currentQuestion && activePlayers){
         return activePlayers.length - currentQuestion.answers.length
@@ -103,13 +88,13 @@ export default new Vuex.Store({
 
   mutations: {
 
-    INCREMENT_ROUND({game}, data){
-      game.round++
-      game.stage = 0
+    INCREMENT_ROUND(store, data){
+      store.game.round++
+      store.game.stage = 0
     },
     
-    INCREMENT_STAGE({game}, data){
-      game.stage++
+    INCREMENT_STAGE(store, data){
+      store.game.stage++
     },
 
     START_GAME(store, data) {
@@ -166,8 +151,8 @@ export default new Vuex.Store({
 
 
 
-    SOCKET_ANSWER_SELECTED({questions}, data){
-      questions[questions.length - 1].answers.forEach((answer) => {
+    SOCKET_ANSWER_SELECTED(store, data){
+      store.questions[store.questions.length - 1].answers.forEach((answer) => {
         // remove any other selections
         for(let i = 0; i > answer.picks.length; i++){
           if(answer.picks[i].userId === answer.hotSeatPlayer.userId){
@@ -186,25 +171,26 @@ export default new Vuex.Store({
     },
 
     // a new question has been added
-    SOCKET_ANSWER_ADDED({questions}, answer){
-      Vue.set(answer, 'picks', [])
-      questions[questions.length - 1].answers.push(answer)
+    SOCKET_ANSWER_ADDED(store, answer){
+      answer.picks = []
+      store.questions[store.questions.length - 1].answers.push(answer)
     },
 
     // a new question has been added
-    SOCKET_QUESTION_ADDED({questions}, question){
-      Vue.set(question, 'answers', [])
-      questions.push(question)
+    SOCKET_QUESTION_ADDED(store, question){
+      question.answers = []
+      store.questions.push(question)
     },
 
-    SOCKET_PLAYER_JOINED({players}, player) {
+    PLAYER_JOINED(store, player) {
       // set player defaults
-      Vue.set(player, 'order', players.length)
+      Vue.set(player, 'order', store.players.length)
       Vue.set(player, 'score', 0)
-      Vue.set(player, 'hotseat', players.length == 0)
+      Vue.set(player, 'hotseat', store.players.length == 0)
       Vue.set(player, 'active', false)
       // add new player
-      players.push(player)
+      store.players.push(player)
+
     },
 
     SOCKET_SEND_GAME_STATE({game, questions, players}, data){
@@ -230,7 +216,7 @@ export default new Vuex.Store({
     },
 
     // another player is active this round
-    SOCKET_PLAYER_ACTIVATE({players}, user) {
+    SOCKET_PLAYER_ACTIVATE({players, game}, user) {
       let player = players.find( player => player.id === user.id )
       player.active = true
     },
@@ -246,7 +232,7 @@ export default new Vuex.Store({
 
     newGame({commit}, data){
         commit('START_GAME', { player: data, host: true, connected: true, synced: true })
-        commit('SOCKET_PLAYER_JOINED', data)
+        commit('PLAYER_JOINED', data)
       //  return new Promise((resolve, reject) => {
       //   setTimeout(() => {
       //   resolve()
@@ -273,6 +259,14 @@ export default new Vuex.Store({
     quitGame({commit}){
       commit('QUIT_GAME')
     },
+
+
+
+
+    socket_playerJoined({commit}, data){
+      commit('PLAYER_JOINED', data)
+      commit('ACTIVATE_PLAYERS')
+    }
 
     // activate({commit}){
     //   commit('setActive')

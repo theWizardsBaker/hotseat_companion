@@ -15,7 +15,10 @@
                           :disabled="lockedIn"
                           @click="lockAnswer"
                           >
-                    Submit Answer
+                    <span class="icon is-success" v-if="lockedIn">
+                      <i class="fa fa-check" aria-hidden="true"></i>
+                    </span>
+                    <span v-else>Submit Answer</span>
                   </button>
                 </div>
               </div>

@@ -86,10 +86,12 @@
               <!-- question section -->
               <div id="question" class="section" v-show="!display.hideQuestion">
                   <h3 class="title is-4 has-text-centered">Question</h3>
+
                   <div v-show="!display.questionHistory">
                     <!-- question -->
                     <question :reveal="display.revealQuestion"
                               :answer="display.answerQuestion"
+                              :question="currentQuestion"
                               @answered="submitQuestion"
                               />
                     <div v-show="questions.length > 1">
@@ -106,6 +108,7 @@
                       </button>
                     </div>
                   </div>
+
                   <div v-show="display.questionHistory">
                     <!-- questions -->
                     <questions :questions="questions"/>
@@ -131,27 +134,29 @@
                   <h3 class="title is-4 has-text-centered">
                     Answers
                   </h3>
-<!--                   <h3 class="subtitle is-5 has-text-centered">
-                    Waiting on {{answersRemaining}} more answer{{(answersRemaining === 1 ? '' : 's')}}
-                  </h3> -->
-                  <answer :name="player.name" 
-                          v-show="display.answer" 
+                  <!-- answer to write -->
+                  <answer :name="player.name"
+                          v-show="display.answer"
                           @answer="submitAnswer"/>
-                <!-- </div> -->
-                <!-- <div v-show="display.answers"> -->
-<!--                   <h3 class="title is-4 has-text-centered">
-                    Answers
-                  </h3> -->
-<!--                   <h3 class="subtitle is-5 has-text-centered" v-show="answerPicksRemaining > 0">
-                    Waiting on {{answerPicksRemaining}} more selection{{(answerPicksRemaining === 1 ? '' : 's')}}
-                  </h3> -->
+
+                  <!-- all users's answers -->
+                  <answers-completed :shrink="display.scoreboard"
+                                     :answers="answers"
+                                     :player="player"
+                                     :players="players"
+                                     :answersRemaining="answersRemaining"
+                                     v-show="display.answers"
+                                     />
+
+                  <!-- all users's answers -->
                   <answers :shrink="display.scoreboard"
                            :select="!hotSeatPlayer"
                            :answers="answers"
                            :player="player"
                            :players="players"
-                           :answersRemaining="answersRemaining"
-                           @selected="submitSelectedAnswer"/>
+                           @selected="submitSelectedAnswer"
+                           v-show="display.selectAnswers || display.revealAnswers"
+                           />
 
                 </div>
                 <div class="is-mobile">
@@ -185,6 +190,7 @@ import Navbar from '@/components/Navbar'
 import Titlebar from '@/components/Titlebar'
 import Questions from '@/views/game/Questions'
 import Question from '@/views/game/Question'
+import AnswersCompleted from '@/views/game/AnswersCompleted'
 import Answers from '@/views/game/Answers'
 import Answer from '@/views/game/Answer'
 import PlayerOrder from '@/views/game/PlayerOrder'
@@ -206,6 +212,7 @@ export default {
     Question,
     Answer,
     Answers,
+    AnswersCompleted,
     OptionMenu,
     PlayerOrder,
     ConfirmBox
@@ -253,11 +260,15 @@ export default {
         scoreboard: false,
         hideQuestion: false,
         questionHistory: false,
+
         answerQuestion: false,
         revealQuestion: false,
+
         answer: false,
         answers: false,
+
         selectAnswers: false,
+        revealAnswers: false,
       },
 
       popup: {
@@ -291,8 +302,9 @@ export default {
               text: "Write an answer to the Hot Seat card from the perspective of the player in the Hot Seat"
             },
             display: {
-              answerQuestion: false,
-              answer: true
+              // answerQuestion: false,
+              answer: true,
+              answers: true
             },
             scrollTo: 'answer'
           },
@@ -303,6 +315,7 @@ export default {
               text: "Select which answer you think was written by the player in the Hot Seat"
             },
             display: {
+              answer: true,
               answers: true,
               selectAnswers: true
             },
@@ -314,7 +327,8 @@ export default {
               text: "The player in the Hot Seat's answer is revealed"
             },
             display: {
-              answers: true,
+              answer: true,
+              revealAnswers: true,
               selectAnswers: false
             }
           },
@@ -361,10 +375,13 @@ export default {
 
     currentStage(){
       // hide all display elements
+      console.log(this.currentStage.display)
       this.$set(this.display, 'answer', !!this.currentStage.display.answer)
       this.$set(this.display, 'answers', !!this.currentStage.display.answers)
       this.$set(this.display, 'waiting', !!this.currentStage.display.waiting)
       this.$set(this.display, 'answerQuestion', !!this.currentStage.display.answerQuestion)
+      this.$set(this.display, 'revealAnswers', !!this.currentStage.display.revealAnswers)
+      this.$set(this.display, 'selectAnswers', !!this.currentStage.display.selectAnswers)
       // if we have a param
       if(!!this.currentStage.scrollTo){
         console.log(this.$refs[this.currentStage.scrollTo])
@@ -422,12 +439,12 @@ export default {
     synced: {
       immediate: true,
       handler(val, val2){
-        console.log(val, val2)
         if(!this.loaded && val){
           this.loaded = val
         }
       }
-    }
+    },
+
 
   },
 
@@ -437,13 +454,13 @@ export default {
       user: ({user}) => user,
       connected: ({game}) => game.connected,
       questions: ({questions}) => questions,
-      answers: (state, {currentQuestion}) => !!currentQuestion ? currentQuestion.answers : [],
     }),
 
     ...mapGetters({
       synced: 'synced',
       isHost: 'isHost',
       player: 'player',
+      answers: 'answers',
       gameKey: 'gameKey',
       players: 'activePlayers',
       allPlayers: 'allPlayers',
@@ -470,13 +487,8 @@ export default {
 
   sockets: {
 
-    player_joined(){
-      if(this.game.stage === 0){
-        this.activatePlayers()
-      }
-    },
-
     question_added(){
+      this.display.revealQuestion = true
       this.advanceStage()
     },
 

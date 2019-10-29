@@ -5,17 +5,21 @@
         <div class="column is-narrow ">
           <card :display="reveal">
             <template #title>
-              <slot name="title">{{cardQuestion.user}}</slot>
+              <slot name="title">
+                <span v-if="question">{{question.hotSeatPlayer.name}}</span>
+                <span v-else>{{cardQuestion.user}}</span>
+              </slot>
             </template>
             <template #content>
               <div v-if="answer">
-                <textarea class="textarea" placeholder="Type Hot Seat question here" v-model="cardQuestion.text">
+                <textarea class="textarea" placeholder="Hot Seat Question" v-model="cardQuestion.text">
                 </textarea>
                 <p class="help has-text-grey-light">{{characterCount}}/{{maxLength}}</p>
                 <br/>
               </div>
               <div v-else>
-                {{cardQuestion.text}}
+                <span v-if="question">{{question.text}}</span>
+                <span v-else>{{cardQuestion.text}}</span>
               </div>
             </template>
             <template #footer>
@@ -56,17 +60,6 @@ export default {
         user: "",
         text: "",
       },
-    }
-  },
-
-  watch: {
-    question: {
-      immediate: true,
-      handler(val) {
-        if(val){
-          this.question = val
-        }
-      }
     }
   },
 
