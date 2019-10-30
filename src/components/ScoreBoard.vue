@@ -18,7 +18,7 @@
     <template v-for="player in players">
       <div class="panel-row" :class="{ 'has-hotseat': player.hotseat }">
         <div class="panel-section hotseat">
-            <span class="icon is-large has-text-danger" v-show="player.hotseat">
+            <span class="icon is-large has-text-danger" v-show="player.userId === hotSeatPlayer.userId">
               <i class="fa fa-fire fa-lg"></i>
             </span>
         
@@ -56,7 +56,10 @@ export default {
   
   name: 'scoreboard',
 
-  props: ['players'],
+  props: [
+    'players',
+    'hotSeatPlayer'
+  ],
 
   data () {
     return {

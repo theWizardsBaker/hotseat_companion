@@ -13,6 +13,7 @@ export default new Vuex.Store({
       synced: false,
       stage: 0,
       round: 0,
+      hotseat: 0,
   	},
 
   	user: {
@@ -44,7 +45,8 @@ export default new Vuex.Store({
 
     inGame: ({game}) => game.key && game.connected,
 
-    hotSeatPlayer: ({players}) => players.find(player => player.hotseat),
+    // hotSeatPlayer: ({players}) => players.find(player => player.hotseat),
+    hotSeatPlayer: ({game}, {activePlayers}) => activePlayers[game.hotseat],
 
     inHotSeat: ({user}, {hotSeatPlayer}) => {
       try {
@@ -87,14 +89,9 @@ export default new Vuex.Store({
   },
 
   mutations: {
-
-    INCREMENT_ROUND(store, data){
-      store.game.round++
-      store.game.stage = 0
-    },
     
     INCREMENT_STAGE(store, data){
-      store.game.stage++
+      store.game.stage += data
     },
 
     START_GAME(store, data) {
@@ -104,6 +101,7 @@ export default new Vuex.Store({
         key: data.player.gameKey,
         score: 0,
         round: 0,
+        hotseat: 0,
         connected: data.connected,
         synced: data.synced,
       }
@@ -137,6 +135,7 @@ export default new Vuex.Store({
         synced: false,
         stage: 0,
         round: 0,
+        hotseat: 0,
       }
 
       store.user = {
@@ -150,12 +149,44 @@ export default new Vuex.Store({
     },
 
 
+    //
+    // SOCKETS
+    //
+
+
+
+    SOCKET_ANSWERS_ADJUDICATED(store, data){
+      // store.questions[store.questions.length - 1].answers.forEach((answer) => {
+      //   if(data.correct.includes(answer.hotSeatPlayer.userId)){
+      //     Vue.set(answer, 'correct', true)
+      //   }
+      //   if(data.duplicate.includes(answer.hotSeatPlayer.userId)){
+      //     Vue.set(answer, 'duplicate', true)
+      //   }
+      // })
+      // shuffle arrays
+      let answers = store.questions[store.questions.length - 1].answers
+      // shuffle answers
+      for (let i = answers.length - 1; i > 0; i -= 1) {
+        let j = Math.floor(Math.random() * (i + 1))
+        const temp = answers[i]
+        // check the correct / duplicate status
+        if(data.correct.includes(temp.player.userId)){
+          Vue.set(temp, 'correct', true)
+        }
+        if(data.duplicates.includes(temp.player.userId)){
+          Vue.set(temp, 'duplicate', true)
+        }
+        answers[i] = answers[j]
+        answers[j] = temp
+      }
+    },
 
     SOCKET_ANSWER_SELECTED(store, data){
       store.questions[store.questions.length - 1].answers.forEach((answer) => {
         // remove any other selections
         for(let i = 0; i > answer.picks.length; i++){
-          if(answer.picks[i].userId === answer.hotSeatPlayer.userId){
+          if(answer.picks[i].userId === answer.player.userId){
             // remove it
             Vue.delete(answer.picks, i)
             // stop the loop
@@ -164,8 +195,9 @@ export default new Vuex.Store({
           }
         }
         // add the pick
-        if(answer.hotSeatPlayer.userId === data.answer.hotSeatPlayer.userId){
-          answer.picks.push(data.answer.hotSeatPlayer)
+        if(answer.player.userId === data.answer.player.userId){
+          // add the player as the pick
+          answer.picks.push(data.player)
         }
       })
     },
@@ -186,7 +218,7 @@ export default new Vuex.Store({
       // set player defaults
       Vue.set(player, 'order', store.players.length)
       Vue.set(player, 'score', 0)
-      Vue.set(player, 'hotseat', store.players.length == 0)
+      Vue.set(player, 'hotseat', false)
       Vue.set(player, 'active', false)
       // add new player
       store.players.push(player)
@@ -221,6 +253,16 @@ export default new Vuex.Store({
       player.active = true
     },
 
+    SOCKET_NEW_ROUND(store) {
+      store.game.round++
+      store.game.stage = 0
+      store.game.hotseat++
+      // roll the hotseat around
+      if(store.game.hotseat >= store.players.length){
+        store.game.hotseat = 0
+      }
+    },
+
     // remove quitter
     SOCKET_PLAYER_QUIT({players}, user) {
       players = players.filter( player => player.id === user.id )
@@ -231,13 +273,8 @@ export default new Vuex.Store({
   actions: {
 
     newGame({commit}, data){
-        commit('START_GAME', { player: data, host: true, connected: true, synced: true })
-        commit('PLAYER_JOINED', data)
-      //  return new Promise((resolve, reject) => {
-      //   setTimeout(() => {
-      //   resolve()
-      // }, 4000)
-      // })
+      commit('START_GAME', { player: data, host: true, connected: true, synced: true })
+      commit('PLAYER_JOINED', data)
     },
 
     joinGame({commit}, data){
@@ -248,38 +285,18 @@ export default new Vuex.Store({
       commit('ACTIVATE_PLAYERS')
     },
 
-    incrementRound({commit}){
-      commit('INCREMENT_ROUND')
-    },
-
-    incrementStage({commit}){
-      commit('INCREMENT_STAGE')
+    incrementStage({commit}, data){
+      commit('INCREMENT_STAGE', data)
     },
 
     quitGame({commit}){
       commit('QUIT_GAME')
     },
 
-
-
-
     socket_playerJoined({commit}, data){
       commit('PLAYER_JOINED', data)
       commit('ACTIVATE_PLAYERS')
     }
-
-    // activate({commit}){
-    //   commit('setActive')
-    // },
-
-    // joinGame({commit, state}, data) {
-    //   // the host
-    //   Vue.set(data, 'host', true)
-    //   //join the game
-    //   commit('joinGame', data)
-    //   // add the player
-    //   commit('SOCKET_PLAYER_JOINED', state.user)
-    // },
 
   },
 })

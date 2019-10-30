@@ -51,6 +51,7 @@ export default {
     overflow-x: auto;
     overflow-y: hidden;
     flex-direction: row-reverse;
+    width: 87vw;
     /*justify-content: center;*/
   }
 }

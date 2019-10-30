@@ -77,7 +77,7 @@ export default {
       for(let i = 0; i < this.players.length; i++){
         let player = this.players[i]
         for(let j = 0; j < this.answers.length; j++){
-          if(this.answers[j].hotSeatPlayer.userId === player.userId){
+          if(this.answers[j].player.userId === player.userId){
             player['answer'] = this.answers[j]
           }
         }

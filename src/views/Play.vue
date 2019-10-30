@@ -74,6 +74,20 @@
             </div>
           </div>
         </div>
+        <div class="section" v-else-if="popup.playerScore">
+          <div class="score">
+            <div class="points is-dark">
+              <h1 class="subtitle is-4 has-text-centered">
+                score
+              </h1>
+              <h1 class="title is-1 has-text-centered">
+                <span class="plus">+</span>
+                <span class="new-points">8</span>
+                <span class="pts">pts</span>
+              </h1>
+            </div>
+          </div>
+        </div>
       </popup>
 
       <!-- the gameboard -->
@@ -130,8 +144,8 @@
               <!-- answer section -->
               <div id="answer" class="section">
                 <br/>
-                <div v-show="display.answer">
-                  <h3 class="title is-4 has-text-centered">
+                <div >
+                  <h3 class="title is-4 has-text-centered" v-show="display.answer || display.answers || display.selectAnswers">
                     Answers
                   </h3>
                   <!-- answer to write -->
@@ -145,18 +159,64 @@
                                      :player="player"
                                      :players="players"
                                      :answersRemaining="answersRemaining"
-                                     v-show="display.answers"
+                                     v-show="display.answers || (display.adjudicateAnswers && !inHotSeat)"
                                      />
 
-                  <!-- all users's answers -->
-                  <answers :shrink="display.scoreboard"
-                           :select="!hotSeatPlayer"
-                           :answers="answers"
-                           :player="player"
-                           :players="players"
-                           @selected="submitSelectedAnswer"
-                           v-show="display.selectAnswers || display.revealAnswers"
-                           />
+                  <div class="section">
+
+                    <div v-show="display.adjudicateAnswers && inHotSeat">
+                      <h3 class="subtitle is-5 has-text-centered" >
+                        Mark matching or duplicate answers
+                      </h3>
+                      <div class="buttons is-centered">
+                        <button class="button is-success" @click="finishAdjudicate">
+                          Continue
+                        </button>
+                      </div>
+                    </div>
+
+                    <h3 class="subtitle is-5 has-text-centered" v-show="display.selectAnswers && !inHotSeat">
+                      Select the answer you think the player in the HotSeat wrote
+                    </h3>
+
+                    <div v-show="display.revealPicks && !display.revealAuthors && inHotSeat">
+                      <h3 class="subtitle is-5 has-text-centered" >
+                        Click to reveal authors
+                      </h3>
+                      <div class="buttons is-centered">
+                        <button class="button is-success" @click="revealAuthors">
+                          Reveal Authors
+                        </button>
+                      </div>
+                    </div>
+
+                    <div v-show="display.revealPicks && display.revealAuthors && inHotSeat">
+                      <h3 class="subtitle is-5 has-text-centered" >
+                        Click to score answers
+                      </h3>
+                      <div class="buttons is-centered">
+                        <button class="button is-success" @click="scoreAnswers">
+                          Score Round
+                        </button>
+                      </div>
+                    </div>
+
+                    <!-- all users's answers -->
+                    <answers :shrink="display.scoreboard"
+                             :select="!inHotSeat && display.selectAnswers"
+                             :answers="answers"
+                             :player="player"
+                             :players="players"
+                             :hotSeatPlayer="hotSeatPlayer"
+                             :adjudicate="display.adjudicateAnswers && inHotSeat"
+                             :revealAuthors="display.revealAuthors"
+                             :revealPicks="display.revealPicks"
+                             @selected="submitSelectedAnswer"
+                             @duplicate="markDuplicate"
+                             @correct="correctChoice"
+                             v-show="display.selectAnswers || (display.adjudicateAnswers && inHotSeat)|| display.revealAuthors || display.revealPicks"
+                             />
+                  </div>
 
                 </div>
                 <div class="is-mobile">
@@ -168,12 +228,12 @@
             <!-- scoreboards -->
             <transition name="slide-right">
               <div class="column is-4-desktop is-hidden-touch" v-show="display.scoreboard">
-                <score-board :players="allPlayers" />
+                <score-board :players="allPlayers" :hotSeatPlayer="hotSeatPlayer" />
               </div>
             </transition>
             <transition name="slide-right">
               <div class="is-hidden-desktop floating-scoreboard" v-show="display.scoreboard">
-                <score-board :players="allPlayers" />
+                <score-board :players="allPlayers" :hotSeatPlayer="hotSeatPlayer" />
               </div>
             </transition>
           </div>
@@ -226,11 +286,6 @@ export default {
     } else {
       // if we're the client, ask the host what the state is
       this.$socket.client.emit('request_game_state', { gameKey: this.gameKey })
-      // this.$store.dispatch('request_game_state').then(() => {
-      //     this.loaded = true
-      // }).catch( (e) => {
-      //   console.log(e)
-      // })
     }
     // get room info
     // this.$http.get('/room', {
@@ -267,8 +322,11 @@ export default {
         answer: false,
         answers: false,
 
+        adjudicateAnswers: false,
         selectAnswers: false,
-        revealAnswers: false,
+        revealAuthors: false,
+
+        score: false,
       },
 
       popup: {
@@ -276,6 +334,7 @@ export default {
         scoring: false,
         showMenu: false,
         confirmQuit: false,
+        playerScore: false,
         reorderPlayers: false,
       },
 
@@ -292,7 +351,11 @@ export default {
               title: "Draw",
               text: "Player in the Hot Seat selects and reads a card"
             },
-            display: {},
+            display: {
+              score: false,
+              revealPicks: false,
+              revealAuthors: false,
+            },
             scrollTo: 'question'
           },
           {
@@ -309,26 +372,51 @@ export default {
             scrollTo: 'answer'
           },
           {
+            name: 'read',
+            directions: {
+              title: "Read",
+              text: "The player in the Hot Seat reads all of the answers out loud"
+            },
+            display: {
+              answer: true,
+              answers: false,
+              adjudicateAnswers: true,
+            },
+          },
+          {
             name: 'vote',
             directions: {
               title: "Guess",
               text: "Select which answer you think was written by the player in the Hot Seat"
             },
             display: {
-              answer: true,
-              answers: true,
+              answer: false,
+              answers: false,
               selectAnswers: true
             },
           },
           {
-            name: 'reveal',
+            name: 'revealPicks',
+            directions: {
+              title: "Reveal Picks",
+              text: "Selections for each answer are revealed"
+            },
+            display: {
+              answer: false,
+              revealPicks: true,
+              selectAnswers: false
+            }
+          },
+          {
+            name: 'revealAuthors',
             directions: {
               title: "Reveal",
               text: "The player in the Hot Seat's answer is revealed"
             },
             display: {
-              answer: true,
-              revealAnswers: true,
+              answer: false,
+              revealPicks: true,
+              revealAuthors: true,
               selectAnswers: false
             }
           },
@@ -339,7 +427,9 @@ export default {
               text: "Recieve points for your answer"
             },
             display: {
-              answers: true
+              revealPicks: true,
+              revealAuthors: true,
+              score: true
             }
           }
         ],
@@ -375,21 +465,18 @@ export default {
 
     currentStage(){
       // hide all display elements
-      console.log(this.currentStage.display)
-      this.$set(this.display, 'answer', !!this.currentStage.display.answer)
-      this.$set(this.display, 'answers', !!this.currentStage.display.answers)
-      this.$set(this.display, 'waiting', !!this.currentStage.display.waiting)
-      this.$set(this.display, 'answerQuestion', !!this.currentStage.display.answerQuestion)
-      this.$set(this.display, 'revealAnswers', !!this.currentStage.display.revealAnswers)
-      this.$set(this.display, 'selectAnswers', !!this.currentStage.display.selectAnswers)
+      for (const [key, value] of Object.entries(this.currentStage.display)) {
+        this.$set(this.display, key, value)
+      }
+
       // if we have a param
       if(!!this.currentStage.scrollTo){
-        console.log(this.$refs[this.currentStage.scrollTo])
         // scroll that thing into view
         // document.getElementById(this.currentStage.scrollTo).scrollIntoView(true)
         let elm = document.getElementById(this.currentStage.scrollTo)
         // document.getElementById('app').scrollTop = elm.offsetTop
-        window.scroll({ top: elm.offsetTop + 50, behavior: 'smooth' })
+        // window.scroll({ top: elm.offsetTop, behavior: 'smooth' })
+        elm.scrollIntoView()
       }
     },
 
@@ -426,11 +513,18 @@ export default {
       handler(val){
         if(val === 0){
           this.activatePlayers()
+          this.checkEndGame()
         }
       }
     },
 
     answersRemaining(val){
+      if(val === 0){
+        this.advanceStage()
+      }
+    },
+
+    answerPicksRemaining(val){
       if(val === 0){
         this.advanceStage()
       }
@@ -445,7 +539,12 @@ export default {
       }
     },
 
-
+    'display.score'(val){
+      if(val){
+        this.popup.playerScore = true
+        this.popup.show = true
+      }
+    }
   },
 
   computed: {
@@ -462,6 +561,7 @@ export default {
       player: 'player',
       answers: 'answers',
       gameKey: 'gameKey',
+      inHotSeat: 'inHotSeat',
       players: 'activePlayers',
       allPlayers: 'allPlayers',
       hotSeatPlayer: 'hotSeatPlayer',
@@ -492,6 +592,30 @@ export default {
       this.advanceStage()
     },
 
+    answers_adjudicated(data){
+      if(data.correct.length > 0){
+        // if we have correct answers, just go to the reveal
+        let index = this.game.stages.findIndex((stage) => stage.name === 'revealPicks')
+        index = index - this.game.stage
+        this.advanceStage(index)
+      } else {
+        // otherwise, go on
+        this.advanceStage()
+      }
+    },
+
+    authors_revealed(){
+      this.advanceStage()
+    },
+
+    answers_scored(){
+      // advance twice
+      // first show scores
+      this.advanceStage()
+      // second go to new game
+      this.advanceStage()
+    }
+
   },
 
   methods: {
@@ -500,8 +624,49 @@ export default {
       'activatePlayers',
       'incrementRound',
       'incrementStage',
+      'nextHotSeat',
       'quitGame',
     ]),
+
+    checkEndGame(){
+      let isEndGame = this.players.some((player) => player.score >= 25)
+    },
+
+    scoreAnswers() {
+      this.$socket.client.emit('score_answers', { gameKey: this.gameKey })
+    },
+
+    revealAuthors(){
+      this.$socket.client.emit('reveal_authors', { gameKey: this.gameKey })
+    },
+
+    finishAdjudicate(){
+      let correct = []
+      let duplicates = []
+
+      this.currentQuestion.answers.forEach((answer) => {
+        if(!!answer.correct){
+          correct.push(answer.player.userId)
+        }
+        if(!!answer.duplicate){
+          duplicates.push(answer.player.userId)
+        }
+      })
+      // find a correct answer -- if there is one
+      this.$socket.client.emit('adjudicate_answers', {
+        gameKey: this.gameKey,
+        correct: correct,
+        duplicates: duplicates,
+      })
+    },
+
+    markDuplicate(answer){
+      this.$set(answer, 'duplicate', !(!!answer.duplicate))
+    },
+
+    correctChoice(answer){
+      this.$set(answer, 'correct', !(!!answer.correct))
+    },
 
     submitSelectedAnswer(answer){
       this.$socket.client.emit('select_answer', {
@@ -513,7 +678,7 @@ export default {
 
     submitAnswer(answerText){
       let answer = {
-        hotSeatPlayer: this.playerInfo,
+        player: this.playerInfo,
         answer: answerText
       }
       this.$socket.client.emit('add_answer', { gameKey: this.gameKey, answer: answer })
@@ -523,21 +688,21 @@ export default {
 
       this.$set(question, 'hotSeatPlayer', this.playerInfo)
 
-      // this.$set(question, 'answers', [])
-
       this.$socket.client.emit('add_question', { gameKey: this.gameKey, question: question })
 
     },
 
-    advanceStage(){
+    advanceStage(increment = 1){
       let len = this.game.stages.length
 
       if(this.game.stage === len - 1){
-        this.incrementRound()
+        if(this.isHost){
+          this.$socket.client.emit('advance_round', { gameKey: this.gameKey })
+        }
         this.game.stage = 0
       } else {
-        this.incrementStage()
-        this.game.stage++
+        this.incrementStage(increment)
+        this.game.stage += increment
       }
     },
 
@@ -563,11 +728,6 @@ export default {
 
     },
 
-    // quitGame(){
-    //   this.quitGame()
-    //   // this.$router.replace({ path: '/' })
-    // }
-
   }
 }
 </script>
@@ -591,6 +751,35 @@ export default {
     }
   }
 
+  .score {
+    .subtitle {
+      font-variant: small-caps;
+      margin-bottom: 1.5em;
+      padding-bottom: .5em;
+      border-bottom: 1px solid grey;
+    }
+    .points{
+      background-color: #363636;
+      color: whitesmoke;
+      padding: 10px;
+      width: 15em;
+      border-radius: 6px;
+      margin: auto;
+
+      .plus {
+        margin-bottom: 15px;
+        margin-right: 3px;
+        display: inline-block;
+        font-size: .7em;
+        vertical-align:middle;
+      }
+
+      .pts {
+        font-size: .5em;
+        padding-left: 5px;
+      }
+    }
+  }
 
   .gameboard {
     /*min-width: 100vw;*/
@@ -626,6 +815,7 @@ export default {
           position: relative;
 
           .floating-scoreboard {
+            z-index: 205;
             position: absolute;
             height: 100%;
             width: 100%;

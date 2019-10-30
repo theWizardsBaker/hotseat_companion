@@ -4,7 +4,9 @@
       <div class="column is-three-fifths is-offset-one-fifth">
         <guess :name="name" :revealed="true">
           <template #text>
-            <textarea class="textarea" v-model="answer">
+            <textarea class="textarea"
+                      v-model="answer"
+                      :disabled="lockedIn">
             </textarea>
             <p class="help has-text-grey-light">{{characterCount}}/{{length}}</p>
             <div class="actions">

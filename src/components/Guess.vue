@@ -1,5 +1,7 @@
 <template>
   <div class="box" :class="{ 'selectable': selectable }" @click="select">
+<!--     <div class="hotseat-player" v-show="isHotSeatPlayer">
+    </div> -->
     <div class="selection" v-show="isSelected">
       <span class="icon">
         <i class="fa fa-check-circle fa-3x"></i>
@@ -7,9 +9,22 @@
     </div>
     <div class="answer-outline">
       <div class="content">
-        <h3 class="title is-5 has-text-dark" v-show="revealed">{{name}}</h3>
+        <h3 class="title is-5 has-text-dark" v-show="revealed">
+          <div v-if="isHotSeatPlayer">
+            <span class="tag is-success is-medium">
+              <span class="icon">
+                <i class="fa fa-star">
+                </i>
+              </span>
+              <span>{{name}}</span>
+            </span>
+          </div>
+          <span v-if="!isHotSeatPlayer">
+            {{name}}
+          </span>
+        </h3>
         <h3 class="title is-6 has-text-dark" v-show="!revealed">
-          <span class="tag has-text-dark">
+          <span class="tag is-white">
             <i class="fa fa-question-circle fa-2x" aria-hidden="true"></i>
           </span>
         </h3>
@@ -35,7 +50,8 @@ export default {
     'text',
     'revealed',
     'selectable',
-    'isSelected'
+    'isSelected',
+    'isHotSeatPlayer'
   ],
 
   data () {
@@ -58,6 +74,18 @@ export default {
     position: relative;
     padding: 8px;
     width: 100%;
+
+    .hotseat-player {
+      width: 100%;
+      height: 100%;
+      left: 0;
+      top: 0;
+      position: absolute;
+      border: 10px solid #23d160;
+      border-radius: 5px;
+      z-index: 200;
+      opacity: .9
+    }
 
     &.selectable:hover {
       cursor: pointer;

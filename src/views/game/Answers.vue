@@ -5,23 +5,47 @@
            :class="[ shrink ? 'is-6-desktop' : 'is-4-desktop' ]"
            v-for="answer, index in answers"
            >
-
-           <!-- v-for="answer, index in answers" -->
-        <!-- index == answers.length - 1 -->
-        <div class="section" v-if="answer.hotSeatPlayer.userId !== player.userId">
-          <guess :name="answer.hotSeatPlayer.name"
+        <!-- walk through all guesses -->
+        <!-- can't select your own answer -->
+        <div class="section" 
+             v-if="(answer.player.userId !== player.userId && (select || adjudicate)) || (!select && !adjudicate)">
+          <guess :name="answer.player.name"
                  :text="answer.answer"
-                 :reveal="revealAuthor"
+                 :isHotSeatPlayer="answer.player.userId === hotSeatPlayer.userId"
+                 :revealed="revealAuthors"
                  :selectable="select"
                  :isSelected="selected === index"
                  @selected="handleSelection(index, answer)"
                  />
-          <div class="tags" v-show="revealVotes">
-            <span class="tag is-success" v-for="vote in answer.votes">
+
+          <!-- let the host player adjudicate answers -->
+          <div class="buttons is-centered" v-if="adjudicate">
+            <button class="button"
+                    :class="[ !!answer.correct ? 'is-success' : 'is-light is-outlined', !!answer.duplicate ? 'disabled' : '']"
+                    :disabled="!!answer.duplicate"
+                    @click="handleCorrect(answer)">
+              <span class="icon">
+                <i class="fa" :class="[ !!answer.correct ? 'fa-star' : 'fa-star-o']"></i>
+              </span>
+              <span>HotSeat Answer</span>
+            </button>
+            <button class="button"
+                    :class="[ !!answer.duplicate ? 'is-warning' : 'is-light is-outlined', !!answer.correct ? 'disabled' : '']"
+                    :disabled="!!answer.correct"
+                    @click="handleDuplicate(answer)">
+              <span class="icon">
+                <i class="fa" :class="[ !!answer.duplicate ? 'fa-check-square-o' : 'fa-square-o']"></i>
+              </span>
+              <span>Duplicate Answer</span>
+            </button>
+          </div>
+          <!-- show tags for selection pics -->
+          <div class="tags" v-show="revealPicks">
+            <span class="tag is-info" v-for="pick in answer.picks">
               <span class="icon">
                 <i class="fa fa-check"></i>
               </span>
-              <span>{{vote}}</span>
+              <span>{{pick.name}}</span>
             </span>
           </div>
         </div>
@@ -44,10 +68,12 @@ export default {
   props: [
     'shrink',
     'select',
-    'revealAuthor',
-    'revealVotes',
+    'revealAuthors',
+    'revealPicks',
     'answers',
-    'player'
+    'player',
+    'adjudicate',
+    'hotSeatPlayer'
   ],
 
   data () {
@@ -61,16 +87,22 @@ export default {
   computed: {
     oddAnswers(){
       return (this.answers.length % 2)
-    }
+    },
   },
   
   methods: {
   	handleSelection(index, answer){
       if(this.selected !== index){
-        selected = index; 
+        this.selected = index;
         this.$emit('selected', answer)
       }
-  	}
+  	},
+    handleDuplicate(answer){
+      this.$emit('duplicate', answer)
+    },
+    handleCorrect(answer){
+      this.$emit('correct', answer)
+    }
   }
 }
 </script>
