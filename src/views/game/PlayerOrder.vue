@@ -76,10 +76,15 @@ export default {
       }
     },
     saveOrder(){
-      this.players.forEach(player => {
-        this.$set(player, 'order', player.newOrder)
+      // this.players.forEach(player => {
+      //   this.$set(player, 'order', player.newOrder)
+      // })
+      let playerOrder = {}
+      this.players.forEach((player) => {
+        playerOrder[player.userId] = player.newOrder
       })
       this.$emit('complete')
+      this.$emit('playerOrder', playerOrder)
     }
   }
 }

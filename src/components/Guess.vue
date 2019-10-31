@@ -1,7 +1,5 @@
 <template>
   <div class="box" :class="{ 'selectable': selectable }" @click="select">
-<!--     <div class="hotseat-player" v-show="isHotSeatPlayer">
-    </div> -->
     <div class="selection" v-show="isSelected">
       <span class="icon">
         <i class="fa fa-check-circle fa-3x"></i>

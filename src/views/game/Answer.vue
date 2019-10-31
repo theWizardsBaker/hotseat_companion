@@ -12,13 +12,16 @@
             <div class="actions">
               <div class="field is-grouped is-grouped-centered">
                 <div class="control">
-                  <button class="button is-success"
-                          :class="{ 'is-disabled': lockedIn}"
+                  <button class="button"
+                          :class="{ 'is-disabled is-light': lockedIn, 'is-success': !lockedIn }"
                           :disabled="lockedIn"
                           @click="lockAnswer"
                           >
-                    <span class="icon is-success" v-if="lockedIn">
-                      <i class="fa fa-check" aria-hidden="true"></i>
+                    <span  v-if="lockedIn">
+                      <span class="icon">
+                        <i class="fa fa-check" aria-hidden="true"></i>
+                      </span>
+                      <span>Submitted</span>
                     </span>
                     <span v-else>Submit Answer</span>
                   </button>
@@ -27,6 +30,15 @@
             </div>
           </template>
         </guess>
+        <!-- show tags for selection pics -->
+        <div class="tags" v-show="revealPicks">
+          <span class="tag is-info" v-for="pick in picks">
+            <span class="icon">
+              <i class="fa fa-check"></i>
+            </span>
+            <span>{{pick.name}}</span>
+          </span>
+        </div>
       </div>
     </div>
   </div>
@@ -45,6 +57,9 @@ export default {
 
   props: [
     'name',
+    'picks',
+    'revealPicks',
+    'newAnswer'
   ],
 
   data () {
@@ -55,6 +70,18 @@ export default {
     }
   },
   
+  watch: {
+    newAnswer: {
+      immediate: true,
+      handler(val){
+        if(val){
+          this.answer = ''
+          this.lockedIn = false
+        }
+      }
+    }
+  },
+
   computed: {
     characterCount(){
       return this.answer.length

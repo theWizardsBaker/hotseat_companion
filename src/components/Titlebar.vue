@@ -9,6 +9,23 @@
         <h3 class="subtitle is-marginless is-paddingless is-5 has-text-light">{{text}}</h3>
       </div>
     </div>
+    <div class="navbar-end">
+      <div class="navbar-item continue-button" v-if="showButton">
+          <div class="field is-grouped">
+            <p class="control">
+              <a class="button is-success" @click="handleClick">
+                <span>
+                  {{button.text}}
+                </span>
+                <span class="icon">
+                  <i class="fa fa-step-forward"></i>
+                </span>
+              </a>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
   </nav>
 </template>
 
@@ -18,12 +35,20 @@ export default {
 
   props: [
     'title',
-    'text'
+    'text',
+    'showButton',
+    'button',
   ],
 
   data () {
     return {
 
+    }
+  },
+
+  methods: {
+    handleClick(){
+      this.$emit('continue')
     }
   }
 }
@@ -33,5 +58,23 @@ export default {
   .is-active {
     background-color: hsl(217, 71%, 53%);
     padding-right: 20px;
+  }
+  .navbar-end {
+    .continue-button {
+      padding: 0;
+      .field {
+        height: 100%;
+        width: 100%;
+        .control {
+          width: 100%;
+          .button {
+            width: 100%;
+            height: 100%;
+            border-radius: 0px;
+            padding: 20px 40px;
+          }
+        }
+      }
+    }
   }
 </style>

@@ -101,6 +101,7 @@ export default new Vuex.Store({
         key: data.player.gameKey,
         score: 0,
         round: 0,
+        stage: 0,
         hotseat: 0,
         connected: data.connected,
         synced: data.synced,
@@ -125,7 +126,7 @@ export default new Vuex.Store({
     // the user has quit the game. reset everything
     QUIT_GAME(store) {
       // notify server
-      this._vm.$socket.client.emit('quit_game', store.user)
+      this._vm.$socket.client.emit('quit_game', { gameKey: store.game.key, user: store.user })
 
       // reset all
       store.game = {
@@ -148,22 +149,62 @@ export default new Vuex.Store({
       store.questions = []
     },
 
+    COMPUTE_SCORES(store, hotSeatPlayer){
+      let playerScores = {}
+      // add 'em up
+      store.questions[store.questions.length - 1].answers.forEach((answer) => {
+        // if the player guessed the hotseat's answer,
+        // then they are awarded 4 points
+        if(!!answer.correct){
+          // don't need to add because the round only awards points
+          // to those users who guessed correctly
+          playerScores[answer.player.userId] = 4
+        } else {
+          // if not,
+          // 1 point for every guess
+          // and 2 points for guessing the hotseat's answer 
+          if(hotSeatPlayer.userId === answer.player.userId){
+            // we're looking at the hotseat's player
+            // give 2 points to whoever guessed this correctly
+            answer.picks.forEach((pick) => {
+              if(playerScores.hasOwnProperty(pick.userId)){
+                playerScores[pick.userId] += 2
+              } else {
+                playerScores[pick.userId] = 2
+              }
+            })
+          } else {
+            // otherwise we're on a player's answer
+            // give that player 1 point for every pick
+            if(playerScores.hasOwnProperty(answer.player.userId)){
+              playerScores[answer.player.userId] += answer.picks.length
+            } else {
+              playerScores[answer.player.userId] = answer.picks.length
+            }
+          }
+        }
+      })
+      // set the player's scores
+      store.players.forEach((player) => {
+        let score = playerScores[player.userId] || 0
+        Vue.set(player, 'score', player.score + score)
+        Vue.set(player, 'scoreChange', score)
+      })
+    },
+
 
     //
     // SOCKETS
     //
 
-
+    SOCKET_REORDER_PLAYERS(store, data){
+      console.log("DATA!!!!", data)
+      store.players.forEach((player) => {
+        player.order = data.playerOrder[player.userId]
+      })
+    },
 
     SOCKET_ANSWERS_ADJUDICATED(store, data){
-      // store.questions[store.questions.length - 1].answers.forEach((answer) => {
-      //   if(data.correct.includes(answer.hotSeatPlayer.userId)){
-      //     Vue.set(answer, 'correct', true)
-      //   }
-      //   if(data.duplicate.includes(answer.hotSeatPlayer.userId)){
-      //     Vue.set(answer, 'duplicate', true)
-      //   }
-      // })
       // shuffle arrays
       let answers = store.questions[store.questions.length - 1].answers
       // shuffle answers
@@ -264,8 +305,24 @@ export default new Vuex.Store({
     },
 
     // remove quitter
-    SOCKET_PLAYER_QUIT({players}, user) {
-      players = players.filter( player => player.id === user.id )
+    SOCKET_PLAYER_QUIT(store, data) {
+      let index = 0
+      store.players.forEach( (player, ind) => {
+        if(player.userId === data.user.id){
+          index = ind
+        }
+      })
+      // remove player
+      Vue.delete(store.players, index)
+      // set new host
+      if(store.players[0].userId === store.user.id){
+        store.game.host = true
+      }
+
+      if(store.players.length >= store.game.hotseat){
+        store.game.hotseat = store.players.length - 1
+      }
+
     },
 
   },
@@ -291,6 +348,10 @@ export default new Vuex.Store({
 
     quitGame({commit}){
       commit('QUIT_GAME')
+    },
+
+    computeScores({commit, getters}){
+      commit('COMPUTE_SCORES', getters.hotSeatPlayer)
     },
 
     socket_playerJoined({commit}, data){

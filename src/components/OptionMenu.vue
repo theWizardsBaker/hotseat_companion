@@ -3,7 +3,10 @@
     <p class="panel-heading">
       <slot name="title"></slot>
     </p>
-    <a class="panel-block" v-for="option in options" @click="handleClick(option.action)">
+    <a class="panel-block" 
+       v-for="option in options" 
+       v-if="!option.hotseat || (hotseat && option.hotseat)"
+       @click="handleClick(option.action)">
       <span class="panel-icon">
         <i class="fa" :class="option.icon" aria-hidden="true"></i>
       </span>
@@ -19,7 +22,8 @@ export default {
   name: 'option-menu',
   
   props: [
-    'options'
+    'options',
+    'hotseat'
   ],
 
   data () {

@@ -4,11 +4,12 @@
       <div class="column answers is-6-tablet "
            :class="[ shrink ? 'is-6-desktop' : 'is-4-desktop' ]"
            v-for="answer, index in answers"
+           v-if="answer.player.userId !== player.userId"
            >
         <!-- walk through all guesses -->
         <!-- can't select your own answer -->
-        <div class="section" 
-             v-if="(answer.player.userId !== player.userId && (select || adjudicate)) || (!select && !adjudicate)">
+        <div class="section">
+             <!-- v-if="(answer.player.userId !== player.userId && (select || adjudicate)) || (!select && !adjudicate)" -->
           <guess :name="answer.player.name"
                  :text="answer.answer"
                  :isHotSeatPlayer="answer.player.userId === hotSeatPlayer.userId"
