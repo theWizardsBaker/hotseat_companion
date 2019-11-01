@@ -181,6 +181,9 @@ export default new Vuex.Store({
             } else {
               playerScores[answer.player.userId] = answer.picks.length
             }
+            if(!!answer.extraPoints){
+              playerScores[answer.player.userId] += 2
+            }
           }
         }
       })

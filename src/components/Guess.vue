@@ -11,7 +11,7 @@
           <div v-if="isHotSeatPlayer">
             <span class="tag is-success is-medium">
               <span class="icon">
-                <i class="fa fa-star">
+                <i class="fa fa-check">
                 </i>
               </span>
               <span>{{name}}</span>
@@ -26,6 +26,15 @@
             <i class="fa fa-question-circle fa-2x" aria-hidden="true"></i>
           </span>
         </h3>
+        <span class="tag is-gold extraPoints is-medium" v-show="extraPoints">
+          <span class="icon is-medium">
+            <i class="fa fa-star fa-lg"></i>
+          </span>
+          <span>
+            +2 Points
+          </span>
+        </span>
+
         <slot name="text">
           <p>
            {{text}}
@@ -49,7 +58,8 @@ export default {
     'revealed',
     'selectable',
     'isSelected',
-    'isHotSeatPlayer'
+    'isHotSeatPlayer',
+    'extraPoints'
   ],
 
   data () {
@@ -68,6 +78,10 @@ export default {
 </script>
 
 <style scoped lang="scss">
+  .is-gold {
+    background-color: #d4af37;
+  }
+
   .box {
     position: relative;
     padding: 8px;
@@ -117,6 +131,12 @@ export default {
       border-radius: 5px;
       position: relative;
       min-height: 130px;
+
+      .extraPoints {
+        position: absolute;
+        top: -23px;
+        right: -31px;
+      }
     }
 
     .answer-brand {

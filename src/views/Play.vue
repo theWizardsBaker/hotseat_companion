@@ -187,6 +187,7 @@
                              :player="player"
                              :players="players"
                              :hotSeatPlayer="hotSeatPlayer"
+                             :inHotSeat="inHotSeat"
                              :adjudicate="display.adjudicateAnswers && inHotSeat"
                              :revealAuthors="display.revealAuthors"
                              :revealPicks="display.revealPicks"
