@@ -36,7 +36,7 @@
                 />
 
       <!-- pop up helper -->
-      <popup :display="popup.show" @close="popupClose">
+      <popup :display="popup.show && ! display.endgame" @close="popupClose">
         <!-- options menu -->
         <option-menu :options="game.options"
                      :hotseat="inHotSeat"
@@ -355,7 +355,7 @@ export default {
 
       game: {
 
-        endGameScore: 2,
+        endGameScore: 25,
 
         round: 0,
 
@@ -594,12 +594,6 @@ export default {
       }
     },
 
-    'display.endgame'(val){
-      if(val){
-        this.display.score = false
-      }
-    }
-
   },
 
   computed: {
@@ -654,17 +648,19 @@ export default {
     },
 
     answers_adjudicated(data){
-      if(data.correct.length > 0 || data.duplicates.length === this.answers){
-        // if we have correct answers or all duplicates, just go to the reveal
-        let index = this.game.stages.findIndex((stage) => stage.name === 'revealAuthors')
-        index = index - this.game.stage
-        this.advanceStage(index)
-        this.display.revealPicks = false
-        this.display.correctAnswer = true
-      } else {
-        // otherwise, go on
-        this.advanceStage()
-      }
+      this.delay(1700).then(() => {
+        if(data.correct.length > 0 || data.duplicates.length === this.answers){
+          // if we have correct answers or all duplicates, just go to the reveal
+          let index = this.game.stages.findIndex((stage) => stage.name === 'revealAuthors')
+          index = index - this.game.stage
+          this.advanceStage(index)
+          this.display.revealPicks = false
+          this.display.correctAnswer = true
+        } else {
+          // otherwise, go on
+          this.advanceStage()
+        }
+      })
     },
 
     authors_revealed(){
@@ -673,14 +669,16 @@ export default {
 
     answers_scored(){
       // tut up
-      this.tallyScores()
-      // first show scores
-      this.advanceStage()
-      // wait a sec
-      // well, not a second, but jsut a figure of speech
+      this.computeScores()
       this.delay(1000).then(() => {
-        // then go to new round
+        // first show scores
         this.advanceStage()
+        // wait a sec
+        // well, not a second, but jsut a figure of speech
+        this.delay(1500).then(() => {
+          // then go to new round
+          this.advanceStage()
+        })
       })
     },
 
@@ -706,10 +704,6 @@ export default {
 
     leaving(){
       this.quitGame()
-    },
-
-    tallyScores(){
-      this.computeScores()
     },
 
     startRound(){

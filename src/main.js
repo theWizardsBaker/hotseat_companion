@@ -18,7 +18,7 @@ Vue.use(VueSocketIOExt, socket, { store });
 
 Vue.use(VueNoty)
 
-axios.defaults.baseURL = `http://${process.env.VUE_APP_SOCKET_BACKEND}`,
+axios.defaults.baseURL = `http://${process.env.VUE_APP_SOCKET_BACKEND}asdlkfasdlasdfl`,
 axios.defaults.headers.common['Content-Type'] = 'application/json'
 axios.defaults.headers.common['Access-Control-Allow-Origin'] = '*'
 
