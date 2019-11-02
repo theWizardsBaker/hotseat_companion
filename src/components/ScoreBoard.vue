@@ -1,5 +1,5 @@
 <template>
-<nav class="panel">
+<nav class="panel" :class="{ 'full-height': fullHeight }">
   <div class="panel-block">
     <div class="panel-row">
       <div class="panel-section heading">
@@ -56,10 +56,14 @@ export default {
   
   name: 'scoreboard',
 
-  props: [
-    'players',
-    'hotSeatPlayer'
-  ],
+  props: {
+    'players': Array,
+    'hotSeatPlayer': Object,
+    'fullHeight': {
+      type: Boolean,
+      default: true
+    }
+  },
 
   data () {
     return {
@@ -72,8 +76,12 @@ export default {
 <style scoped lang="scss">
 .panel {
   background-color: white;
-  min-height: 100vh;
-  height: 100%;
+
+  &.full-height {
+    min-height: 100vh;
+    height: 100%;
+  }
+
   .panel-block {
     display: table;
     width: 100%;

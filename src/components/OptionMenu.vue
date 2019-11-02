@@ -3,7 +3,7 @@
     <p class="panel-heading">
       <slot name="title"></slot>
     </p>
-    <a class="panel-block" 
+    <a class="panel-block has-text-black" 
        v-for="option in options" 
        v-if="!option.hotseat || (hotseat && option.hotseat)"
        @click="handleClick(option.action)">

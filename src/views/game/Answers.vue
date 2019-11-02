@@ -16,6 +16,7 @@
                  :selectable="select && !inHotSeat"
                  :isSelected="selected === index"
                  :extraPoints="!!answer.extraPoints"
+                 :correct="!!answer.correct"
                  @selected="handleSelection(index, answer)"
                  />
           <!-- let the host player adjudicate answers -->
@@ -104,7 +105,6 @@ export default {
       if(this.revealPicks || this.revealAuthors || this.select){
         let answers = this.answers.filter((answer) => (!!answer.duplicate) === false)
         let hostPicks = answers.filter((answer) => !!answer.correct)
-        console.log(answers)
         return hostPicks.length > 0 ? hostPicks : answers
       } else {
         return this.answers

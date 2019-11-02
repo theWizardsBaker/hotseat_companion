@@ -50,7 +50,7 @@ export default {
   .questions {
     overflow-x: auto;
     overflow-y: hidden;
-    flex-direction: row-reverse;
+    /*flex-direction: row-reverse;*/
     width: 87vw;
     /*justify-content: center;*/
   }

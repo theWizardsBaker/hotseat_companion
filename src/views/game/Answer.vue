@@ -2,7 +2,11 @@
   <div class="hero is-medium">
     <div class="columns">
       <div class="column is-three-fifths is-offset-one-fifth">
-        <guess :name="name" :revealed="true">
+        <guess :name="name"
+               :revealed="true"
+               :extraPoints="submittedAnswer.extraPoints"
+               :correct="submittedAnswer.correct"
+               >
           <template #text>
             <textarea class="textarea"
                       v-model="answer"
@@ -59,6 +63,7 @@ export default {
     'name',
     'picks',
     'revealPicks',
+    'submittedAnswer'
   ],
 
   mounted(){

@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "export SOCKET_BACKEND=localhost:8087; vue-cli-service serve --port 3005",
+    "dev": "vue-cli-service serve --port 3005",
     "build": "vue-cli-service build"
   },
   "dependencies": {

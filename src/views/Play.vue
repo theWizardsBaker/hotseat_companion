@@ -96,6 +96,29 @@
         </div>
       </popup>
 
+      <!-- endgame popup -->
+      <popup :display="display.endgame">
+        <div class="section">
+          <div class="score">
+            <div class="points is-dark">
+              <h1 class="title is-1 has-text-centered" :class="[ gameWinner ? 'has-text-success' : 'has-text-danger' ]">
+                {{gameWinner ? 'You Win!' : 'You Lose'}}
+                <span v-if="gameWinner">&#127882;</span>
+              </h1>
+              <button class="button is-outlined is-light is-fullwidth" @click="endGame">
+                Return to Game Menu
+              </button>
+            </div>
+            <br/>
+            <div>
+              <score-board :players="allPlayers"
+                           :hotSeatPlayer="hotSeatPlayer"
+                           :fullHeight="false" />
+            </div>
+          </div>
+        </div>
+      </popup>
+
       <!-- the gameboard -->
       <div class="game">
         <div class="game-display">
@@ -160,7 +183,7 @@
                           v-if="display.answer"
                           :picks="answer.picks"
                           :revealPicks="display.revealPicks"
-                          :answer="answer"
+                          :submittedAnswer="answer"
                           @answer="submitAnswer"/>
 
                   <!-- all users's answers -->
@@ -174,11 +197,14 @@
 
                   <div class="section">
 
-                    <h3 class="subtitle is-5 has-text-centered" v-show="inHotSeat">
+                    <h3 class="subtitle is-5 has-text-centered" v-if="inHotSeat">
                       {{currentStage.directions.hotseat}}
                     </h3>
-                    <h3 class="subtitle is-5 has-text-centered" v-show="!inHotSeat">
+                    <h3 class="subtitle is-5 has-text-centered" v-else>
                       {{currentStage.directions.page}}
+                    </h3>
+                    <h3 class="title is-5 has-text-centered has-text-success" v-if="display.correctAnswer" >
+                      &#11088; Correct Answer Guessed &#11088;
                     </h3>
 
                     <!-- all users's answers -->
@@ -263,6 +289,26 @@ export default {
 
   created(){
 
+    window.addEventListener('beforeunload', this.leaving)
+
+    // reset everything
+    this.game.round = 0
+    this.game.stage = 0
+
+    this.display.scoreboard = false
+    this.display.hideQuestion = false
+    this.display.questionHistory = false
+    this.display.answerQuestion = false
+    this.display.revealQuestion = false
+    this.display.answer = false
+    this.display.answers = false
+    this.display.adjudicateAnswers = false
+    this.display.selectAnswers = false
+    this.display.revealAuthors = false
+    this.display.score = false
+    this.display.endgame = false
+
+
     if(this.isHost){
       // if we're the host, just load
       this.loaded = true
@@ -294,6 +340,8 @@ export default {
         revealAuthors: false,
 
         score: false,
+        endgame: false,
+        correctAnswer: false,
       },
 
       popup: {
@@ -307,6 +355,8 @@ export default {
 
       game: {
 
+        endGameScore: 2,
+
         round: 0,
 
         stage: 0,
@@ -319,6 +369,7 @@ export default {
               text: "Player in the Hot Seat selects and reads a card"
             },
             display: {
+              correctAnswer: false,
               revealQuestion: false,
               answerQuestion: false,
               answer: false,
@@ -393,6 +444,9 @@ export default {
               text: "The player in the Hot Seat's answer is revealed"
             },
             display: {
+              answers: false,
+              selectAnswers: false,
+              adjudicateAnswers: false,
               revealPicks: true,
               revealAuthors: true,
               selectAnswers: false
@@ -487,6 +541,9 @@ export default {
     },
 
     players(){
+      if(this.game.stage <= 1){
+        this.activatePlayers()
+      }
       this.startRound()
     },
 
@@ -516,7 +573,7 @@ export default {
     },
 
     answerPicksRemaining(val){
-      if(val === 0){
+      if(val === 0 && this.currentStage.name === 'vote'){
         this.advanceStage()
       }
     },
@@ -535,7 +592,14 @@ export default {
         this.popup.playerScore = true
         this.popup.show = true
       }
+    },
+
+    'display.endgame'(val){
+      if(val){
+        this.display.score = false
+      }
     }
+
   },
 
   computed: {
@@ -554,6 +618,7 @@ export default {
       gameKey: 'gameKey',
       inHotSeat: 'inHotSeat',
       players: 'activePlayers',
+      gameWinner: 'gameWinner',
       allPlayers: 'allPlayers',
       hotSeatPlayer: 'hotSeatPlayer',
       currentQuestion: 'currentQuestion',
@@ -591,9 +656,11 @@ export default {
     answers_adjudicated(data){
       if(data.correct.length > 0 || data.duplicates.length === this.answers){
         // if we have correct answers or all duplicates, just go to the reveal
-        let index = this.game.stages.findIndex((stage) => stage.name === 'revealPicks')
+        let index = this.game.stages.findIndex((stage) => stage.name === 'revealAuthors')
         index = index - this.game.stage
         this.advanceStage(index)
+        this.display.revealPicks = false
+        this.display.correctAnswer = true
       } else {
         // otherwise, go on
         this.advanceStage()
@@ -615,7 +682,13 @@ export default {
         // then go to new round
         this.advanceStage()
       })
-    }
+    },
+
+    // player_joined(){
+    //   if(this.game.stage <= 1){
+    //     this.activatePlayers()
+    //   }
+    // }
 
   },
 
@@ -628,7 +701,12 @@ export default {
       'nextHotSeat',
       'computeScores',
       'quitGame',
+      'endGame'
     ]),
+
+    leaving(){
+      this.quitGame()
+    },
 
     tallyScores(){
       this.computeScores()
@@ -648,7 +726,7 @@ export default {
     },
 
     checkEndGame(){
-      let isEndGame = this.players.some((player) => player.score >= 25)
+      this.display.endgame = this.players.some((player) => player.score >= this.game.endGameScore)
     },
 
     scoreAnswers() {
@@ -699,10 +777,11 @@ export default {
     },
 
     extraPoints(answer){
+      let extraPoints = !!answer.extraPoints
       // remove all
       this.removeExtraPoints()
       // set
-      this.$set(answer, 'extraPoints', !!answer.extraPoints)
+      this.$set(answer, 'extraPoints', !extraPoints)
     },
 
     submitSelectedAnswer(answer){

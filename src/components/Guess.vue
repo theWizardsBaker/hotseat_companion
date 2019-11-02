@@ -26,12 +26,21 @@
             <i class="fa fa-question-circle fa-2x" aria-hidden="true"></i>
           </span>
         </h3>
-        <span class="tag is-gold extraPoints is-medium" v-show="extraPoints">
+        <span class="tag is-gold extraPoints is-medium" v-show="extraPoints && revealed">
           <span class="icon is-medium">
             <i class="fa fa-star fa-lg"></i>
           </span>
           <span>
             +2 Points
+          </span>
+        </span>
+
+        <span class="tag is-success extraPoints is-medium" v-show="correct && revealed">
+          <span class="icon is-medium">
+            <i class="fa fa-star fa-lg"></i>
+          </span>
+          <span>
+            Guessed HotSeat
           </span>
         </span>
 
@@ -59,7 +68,8 @@ export default {
     'selectable',
     'isSelected',
     'isHotSeatPlayer',
-    'extraPoints'
+    'extraPoints',
+    'correct'
   ],
 
   data () {
