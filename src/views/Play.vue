@@ -112,6 +112,7 @@
                     <question :reveal="display.revealQuestion"
                               :answer="display.answerQuestion"
                               :question="currentQuestion"
+                              :newRound="game.round"
                               @answered="submitQuestion"
                               />
                     <div v-show="questions.length > 1">
@@ -156,10 +157,10 @@
                   </h3>
                   <!-- answer to write -->
                   <answer :name="player.name"
-                          v-show="display.answer"
+                          v-if="display.answer"
                           :picks="answer.picks"
                           :revealPicks="display.revealPicks"
-                          :newAnswer="display.answer"
+                          :answer="answer"
                           @answer="submitAnswer"/>
 
                   <!-- all users's answers -->
@@ -168,7 +169,7 @@
                                      :player="player"
                                      :players="players"
                                      :answersRemaining="answersRemaining"
-                                     v-show="display.answers || (display.adjudicateAnswers && !inHotSeat)"
+                                     v-if="display.answers || (display.adjudicateAnswers && !inHotSeat)"
                                      />
 
                   <div class="section">
@@ -182,7 +183,7 @@
 
                     <!-- all users's answers -->
                     <answers :shrink="display.scoreboard"
-                             :select="!inHotSeat && display.selectAnswers"
+                             :select="display.selectAnswers"
                              :answers="answers"
                              :player="player"
                              :players="players"
@@ -191,10 +192,12 @@
                              :adjudicate="display.adjudicateAnswers && inHotSeat"
                              :revealAuthors="display.revealAuthors"
                              :revealPicks="display.revealPicks"
+                             :newRound="game.round"
                              @selected="submitSelectedAnswer"
                              @duplicate="markDuplicate"
                              @correct="correctChoice"
-                             v-show="display.selectAnswers || (display.adjudicateAnswers && inHotSeat)|| display.revealAuthors || display.revealPicks"
+                             @extraPoints="extraPoints"
+                             v-if="display.selectAnswers || (display.adjudicateAnswers && inHotSeat)|| display.revealAuthors || display.revealPicks"
                              />
                   </div>
 
@@ -298,8 +301,8 @@ export default {
         scoring: false,
         showMenu: false,
         confirmQuit: false,
-        playerScore: false,
         reorderPlayers: false,
+        playerScore: false,
       },
 
       game: {
@@ -321,6 +324,7 @@ export default {
               answer: false,
               revealPicks: false,
               revealAuthors: false,
+              score: false,
             },
             scrollTo: 'question'
           },
@@ -372,6 +376,8 @@ export default {
               text: "Selections for each answer are revealed"
             },
             display: {
+              answers: false,
+              adjudicateAnswers: false,
               revealPicks: true,
               selectAnswers: false
             },
@@ -403,9 +409,9 @@ export default {
               text: "Recieve points for your answer"
             },
             display: {
+              score: true,
               revealPicks: true,
               revealAuthors: true,
-              score: true
             }
           }
         ],
@@ -447,7 +453,7 @@ export default {
 
       // hide all display elements
       for (const [key, value] of Object.entries(this.currentStage.display)) {
-        this.$set(this.display, key, value)
+        this.display[key] = value
       }
 
       // if we have a param
@@ -583,8 +589,8 @@ export default {
     },
 
     answers_adjudicated(data){
-      if(data.correct.length > 0){
-        // if we have correct answers, just go to the reveal
+      if(data.correct.length > 0 || data.duplicates.length === this.answers){
+        // if we have correct answers or all duplicates, just go to the reveal
         let index = this.game.stages.findIndex((stage) => stage.name === 'revealPicks')
         index = index - this.game.stage
         this.advanceStage(index)
@@ -656,6 +662,7 @@ export default {
     finishAdjudicate(){
       let correct = []
       let duplicates = []
+      let extraPoints = null
 
       this.currentQuestion.answers.forEach((answer) => {
         if(!!answer.correct){
@@ -664,21 +671,38 @@ export default {
         if(!!answer.duplicate){
           duplicates.push(answer.player.userId)
         }
+        if(!!answer.extraPoints){
+          extraPoints = answer.player.userId
+        }
       })
       // find a correct answer -- if there is one
       this.$socket.client.emit('adjudicate_answers', {
         gameKey: this.gameKey,
         correct: correct,
         duplicates: duplicates,
+        extraPoints: extraPoints
       })
     },
 
+    removeExtraPoints(){
+      this.answers.forEach((answer) => this.$set(answer, 'extraPoints', false))
+    },
+
     markDuplicate(answer){
+      this.removeExtraPoints()
       this.$set(answer, 'duplicate', !(!!answer.duplicate))
     },
 
     correctChoice(answer){
+      this.removeExtraPoints()
       this.$set(answer, 'correct', !(!!answer.correct))
+    },
+
+    extraPoints(answer){
+      // remove all
+      this.removeExtraPoints()
+      // set
+      this.$set(answer, 'extraPoints', !!answer.extraPoints)
     },
 
     submitSelectedAnswer(answer){
@@ -723,9 +747,9 @@ export default {
     },
 
     popupClose(){
-      this.popup.show = false;
-      this.popup.showMenu = false;
-      this.popup.playerScore = false;
+      this.popup.show = false
+      this.popup.showMenu = false
+      this.popup.playerScore = false
     },
 
     handleOptionClick(action){

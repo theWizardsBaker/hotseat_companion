@@ -13,7 +13,7 @@
                  :text="answer.answer"
                  :isHotSeatPlayer="answer.player.userId === hotSeatPlayer.userId"
                  :revealed="revealAuthors"
-                 :selectable="select"
+                 :selectable="select && !inHotSeat"
                  :isSelected="selected === index"
                  :extraPoints="!!answer.extraPoints"
                  @selected="handleSelection(index, answer)"
@@ -86,12 +86,13 @@ export default {
     'inHotSeat'
   ],
 
+  mounted(){
+    this.selected = null
+  },
+
   data () {
     return {
-      show: false,
       selected: null,
-      currentAnswer: null,
-      extraPointAwarded: null
     }
   },
 
@@ -100,9 +101,10 @@ export default {
       return (this.answers.length % 2)
     },
     filteredAnswers(){
-      if(this.revealPicks || this.revealAuthors){
-        let answers = this.answers.filter((answer) => !!answer.duplicate)
+      if(this.revealPicks || this.revealAuthors || this.select){
+        let answers = this.answers.filter((answer) => (!!answer.duplicate) === false)
         let hostPicks = answers.filter((answer) => !!answer.correct)
+        console.log(answers)
         return hostPicks.length > 0 ? hostPicks : answers
       } else {
         return this.answers
@@ -111,9 +113,6 @@ export default {
   },
   
   methods: {
-    removeExtraPoints(){
-      this.answers.forEach((answer) => this.$set(answer, 'extraPoints', false))
-    },
   	handleSelection(index, answer){
       if(this.selected !== index){
         this.selected = index;
@@ -121,20 +120,13 @@ export default {
       }
   	},
     handleDuplicate(answer){
-      this.removeExtraPoints()
       this.$emit('duplicate', answer)
     },
     handleCorrect(answer){
-      this.removeExtraPoints()
       this.$emit('correct', answer)
     },
     handleExtraPoints(answer){
-      if(answer.extraPoints){
-        this.$set(answer, 'extraPoints', false)
-      } else {
-        this.removeExtraPoints()
-        this.$set(answer, 'extraPoints', true)
-      }
+      this.$emit('extraPoints', answer)
     }
   }
 }

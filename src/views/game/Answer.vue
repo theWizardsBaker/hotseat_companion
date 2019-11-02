@@ -59,26 +59,18 @@ export default {
     'name',
     'picks',
     'revealPicks',
-    'newAnswer'
   ],
+
+  mounted(){
+    this.answer = ''
+    this.lockedIn = false
+  },
 
   data () {
     return {
       answer: '',
       length: 100,
       lockedIn: false
-    }
-  },
-  
-  watch: {
-    newAnswer: {
-      immediate: true,
-      handler(val){
-        if(val){
-          this.answer = ''
-          this.lockedIn = false
-        }
-      }
     }
   },
 

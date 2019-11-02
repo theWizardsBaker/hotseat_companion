@@ -150,6 +150,7 @@ export default new Vuex.Store({
     },
 
     COMPUTE_SCORES(store, hotSeatPlayer){
+      let correctGuess = []
       let playerScores = {}
       // add 'em up
       store.questions[store.questions.length - 1].answers.forEach((answer) => {
@@ -159,6 +160,7 @@ export default new Vuex.Store({
           // don't need to add because the round only awards points
           // to those users who guessed correctly
           playerScores[answer.player.userId] = 4
+          correctGuess.push(answer.player.userId)
         } else {
           // if not,
           // 1 point for every guess
@@ -187,9 +189,15 @@ export default new Vuex.Store({
           }
         }
       })
+
       // set the player's scores
       store.players.forEach((player) => {
-        let score = playerScores[player.userId] || 0
+        let score = 0
+        if(correctGuess.length > 0){
+          score = correctGuess.includes(player.userId) ? playerScores[player.userId] : 0
+        } else {
+          score = playerScores[player.userId] || 0
+        }
         Vue.set(player, 'score', player.score + score)
         Vue.set(player, 'scoreChange', score)
       })
@@ -220,6 +228,9 @@ export default new Vuex.Store({
         }
         if(data.duplicates.includes(temp.player.userId)){
           Vue.set(temp, 'duplicate', true)
+        }
+        if(data.extraPoints === temp.player.userId){
+          Vue.set(temp, 'extraPoints', true)
         }
         answers[i] = answers[j]
         answers[j] = temp

@@ -50,7 +50,8 @@ export default {
   props: [
     'reveal',
     'answer',
-    'question'
+    'question',
+    'newRound'
   ],
 
   data () {
@@ -80,6 +81,8 @@ export default {
   methods: {
   	answerQuestion(){
       this.$emit('answered', this.cardQuestion)
+      this.cardQuestion.user = ""
+      this.cardQuestion.text = ""
   	}
   }
 }
