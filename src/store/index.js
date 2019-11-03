@@ -319,8 +319,9 @@ export default new Vuex.Store({
       store.game.round++
       store.game.stage = 0
       store.game.hotseat++
+      let players = store.players.filter(player => !player.spectator)
       // roll the hotseat around
-      if(store.game.hotseat >= store.players.length){
+      if(store.game.hotseat >= players.length){
         store.game.hotseat = 0
       }
     },

@@ -101,8 +101,9 @@
       <popup :display="display.endgame">
         <div class="section">
           <div class="score">
-            <div class="points is-dark">
-              <h1 class="title is-1 has-text-centered" :class="[ gameWinner ? 'has-text-success' : 'has-text-danger' ]">
+            <div class="points is-dark" v-show="!this.player.spectator">
+              <h1 class="title is-1 has-text-centered" 
+                  :class="[ gameWinner ? 'has-text-success' : 'has-text-danger' ]">
                 {{gameWinner ? 'You Win!' : 'You Lose'}}
                 <span v-if="gameWinner">&#127882;</span>
               </h1>
@@ -193,7 +194,7 @@
                                      :player="player"
                                      :players="players"
                                      :answersRemaining="answersRemaining"
-                                     v-if="display.answers || (display.adjudicateAnswers && !inHotSeat)"
+                                     v-if="display.answers || (display.adjudicateAnswers && !inHotSeat) || (player.spectator && display.answers)"
                                      />
 
                   <div class="section">
@@ -317,6 +318,7 @@ export default {
     } else {
       // if we're the client, ask the host what the state is
       this.$socket.client.emit('request_game_state', { gameKey: this.gameKey })
+      this.setDisplay()
     }
 
   },
@@ -358,7 +360,7 @@ export default {
 
       game: {
 
-        endGameScore: 25,
+        endGameScore: 10,
 
         round: 0,
 
@@ -389,6 +391,7 @@ export default {
               text: "Write an answer to the Hot Seat card from the perspective of the player in the Hot Seat"
             },
             display: {
+              revealQuestion: true,
               answerQuestion: false,
               answer: true,
               answers: true
@@ -403,6 +406,7 @@ export default {
               hotseat: "Mark matching or duplicate answers"
             },
             display: {
+              revealQuestion: true,
               answers: false,
               adjudicateAnswers: true,
             },
@@ -418,6 +422,7 @@ export default {
               text: "Select which answer you think was written by the player in the Hot Seat",
             },
             display: {
+              revealQuestion: true,
               answers: false,
               selectAnswers: true,
               adjudicateAnswers: false,
@@ -430,6 +435,7 @@ export default {
               text: "Selections for each answer are revealed"
             },
             display: {
+              revealQuestion: true,
               answers: false,
               adjudicateAnswers: false,
               revealPicks: true,
@@ -447,6 +453,7 @@ export default {
               text: "The player in the Hot Seat's answer is revealed"
             },
             display: {
+              revealQuestion: true,
               answers: false,
               selectAnswers: false,
               adjudicateAnswers: false,
@@ -466,9 +473,11 @@ export default {
               text: "Recieve points for your answer"
             },
             display: {
+              revealQuestion: true,
               score: true,
               revealPicks: true,
               revealAuthors: true,
+              answerQuestion: false
             }
           }
         ],
@@ -507,18 +516,9 @@ export default {
   watch: {
 
     currentStage(){
-
-      if(this.player.active){
-        // set loading to false every time
-        this.display.loading = false
-        // hide all display elements
-        for (const [key, value] of Object.entries(this.currentStage.display)) {
-          this.display[key] = value
-        }
-      }
-
+      this.setDisplay()
       // if we have a param
-      if(!!this.currentStage.scrollTo){
+      // if(!!this.currentStage.scrollTo){
         // scroll that thing into view
         // document.getElementById(this.currentStage.scrollTo).scrollIntoView(true)
         // document.getElementById('app').scrollTop = elm.offsetTop
@@ -526,7 +526,7 @@ export default {
 
         // let elm = document.getElementById(this.currentStage.scrollTo)
         // elm.scrollIntoView()
-      }
+      // }
     },
 
     loaded: {
@@ -570,7 +570,7 @@ export default {
           this.activatePlayers()
         }
         if(val === 0){
-          this.startRound()
+          // this.startRound()
           this.checkEndGame()
         }
       }
@@ -598,7 +598,7 @@ export default {
     },
 
     'display.score'(val){
-      if(val){
+      if(val && !this.player.spectator){
         this.popup.playerScore = true
         this.popup.show = true
       }
@@ -711,6 +711,18 @@ export default {
       'quitGame',
       'endGame'
     ]),
+
+    setDisplay(){
+      if(this.player.active || this.player.spectator){
+        console.log(this.currentStage)
+        // set loading to false every time
+        this.display.loading = false
+        // hide all display elements
+        for (const [key, value] of Object.entries(this.currentStage.display)) {
+          this.display[key] = value
+        }
+      }
+    },
 
     leaving(){
       this.quitGame()
