@@ -197,14 +197,15 @@ export default {
           if(response.error){
             this.showError(response.data.message)
           } else {
+
             // add the new elements
             data.userId = response.data.userId
             data.gameKey = response.data.gameKey
             // create the new game
             this.$store.dispatch(option.action === 'create' ? 'newGame' : 'joinGame', data)
-            // .then(() => {
-            //   this.playGame()
-            // }).catch((e) => console.log(e))
+            // if(option.spectate){
+            //   this.$store.dispatch('playerSpectate', data)
+            // }
           }
         })
   		}

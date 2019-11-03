@@ -58,7 +58,12 @@ export default {
 
   props: {
     'players': Array,
-    'hotSeatPlayer': Object,
+    'hotSeatPlayer': {
+      type: Object,
+      default(){
+        return { userId: '' }
+      }
+    },
     'fullHeight': {
       type: Boolean,
       default: true

@@ -36,24 +36,22 @@ export default new Vuex.Store({
 
     activePlayers: ({players}) => {
       let activePlayers = players.filter(player => player.active)
-      return activePlayers.sort((a, b) => a.order - b.order)
+      return activePlayers.sort((a, b) => b.order - a.order)
     },
 
-    allPlayers: ({players}) => players.sort((a, b) => a.order - b.order),
+    allPlayers: ({players}) => {
+      return (players.filter((player) => !player.spectator )).sort((a, b) => a.order - b.order)
+    },
 
     isHost: ({game}) => game.host,
 
     inGame: ({game}) => game.key && game.connected,
 
     // hotSeatPlayer: ({players}) => players.find(player => player.hotseat),
-    hotSeatPlayer: ({game}, {activePlayers}) => activePlayers[game.hotseat],
+    hotSeatPlayer: ({game, players}, ) => players.find((player) => player.order === game.hotseat),
 
     inHotSeat: ({user}, {hotSeatPlayer}) => {
-      try {
-        return user.id === hotSeatPlayer.userId
-      } catch(e) {
-        return false
-      }
+      return hotSeatPlayer ? user.id === hotSeatPlayer.userId : false
     },
 
     currentQuestion: ({questions}) => questions[questions.length - 1],
@@ -87,7 +85,6 @@ export default new Vuex.Store({
 
     gameWinner: (state, {player, activePlayers}) => {
       let highScore = activePlayers.sort((a, b) => b.score - a.score)
-      console.log(highScore[0].userId, player.userId, highScore[0].userId === player.userId, highScore[0].userId == player.userId, )
       return highScore.length > 0 ? highScore[0].userId === player.userId : null
     }
   },
@@ -123,7 +120,9 @@ export default new Vuex.Store({
 
     ACTIVATE_PLAYERS(store){
       store.players.forEach((player) => {
-        player.active = true
+        if(!player.spectator){
+          player.active = true
+        }
       })
     },
 
@@ -201,13 +200,11 @@ export default new Vuex.Store({
       // set the player's scores
       store.players.forEach((player) => {
         let score = 0
-        console.log(correctGuess, playerScores)
         if(correctGuess.length > 0){
           score = correctGuess.includes(player.userId) ? playerScores[player.userId] : 0
         } else {
           score = playerScores[player.userId] || 0
         }
-        console.log(score)
         Vue.set(player, 'score', player.score + score)
         Vue.set(player, 'scoreChange', score)
       })
@@ -219,7 +216,6 @@ export default new Vuex.Store({
     //
 
     SOCKET_REORDER_PLAYERS(store, data){
-      console.log("DATA!!!!", data)
       store.players.forEach((player) => {
         player.order = data.playerOrder[player.userId]
       })
@@ -240,7 +236,6 @@ export default new Vuex.Store({
           Vue.set(temp, 'duplicate', true)
         }
         if(data.extraPoints === temp.player.userId){
-          console.log("AWARD EXTRA POINTS")
           Vue.set(temp, 'extraPoints', true)
         }
         answers[i] = answers[j]
@@ -286,6 +281,7 @@ export default new Vuex.Store({
       Vue.set(player, 'score', 0)
       Vue.set(player, 'hotseat', false)
       Vue.set(player, 'active', false)
+      Vue.set(player, 'spectator', player.spectator || false)
       // add new player
       store.players.push(player)
 
@@ -389,6 +385,10 @@ export default new Vuex.Store({
     socket_playerJoined({commit}, data){
       commit('PLAYER_JOINED', data)
       // commit('ACTIVATE_PLAYERS')
+    },
+
+    socket_playerSpectate({commit}, data){
+      commit('PLAYER_JOINED', data)
     }
 
   },

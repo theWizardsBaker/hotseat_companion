@@ -10,10 +10,14 @@
       </div>
     </div>
     <div class="navbar-end">
-      <div class="navbar-item continue-button" v-if="showButton">
+      <div class="navbar-item continue-button"
+           v-if="showButton">
           <div class="field is-grouped">
             <p class="control">
-              <a class="button is-success" @click="handleClick">
+              <a class="button is-success"
+                 :class="{ 'is-loading': loading }"
+                 :disabled="loading"
+                 @click="handleClick">
                 <span>
                   {{button.text}}
                 </span>
@@ -38,6 +42,7 @@ export default {
     'text',
     'showButton',
     'button',
+    'loading'
   ],
 
   data () {

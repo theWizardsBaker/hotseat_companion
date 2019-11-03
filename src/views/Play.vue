@@ -32,6 +32,7 @@
                 :text="currentStage.directions.text"
                 :showButton="(inHotSeat && !!currentStage.button)"
                 :button="currentStage.button"
+                :loading="display.loading"
                 @continue="titlebarClick"
                 />
 
@@ -180,7 +181,7 @@
                   </h3>
                   <!-- answer to write -->
                   <answer :name="player.name"
-                          v-if="display.answer"
+                          v-if="display.answer && !player.spectator"
                           :picks="answer.picks"
                           :revealPicks="display.revealPicks"
                           :submittedAnswer="answer"
@@ -307,6 +308,7 @@ export default {
     this.display.revealAuthors = false
     this.display.score = false
     this.display.endgame = false
+    this.display.loading = false
 
 
     if(this.isHost){
@@ -342,6 +344,7 @@ export default {
         score: false,
         endgame: false,
         correctAnswer: false,
+        loading: false
       },
 
       popup: {
@@ -505,9 +508,13 @@ export default {
 
     currentStage(){
 
-      // hide all display elements
-      for (const [key, value] of Object.entries(this.currentStage.display)) {
-        this.display[key] = value
+      if(this.player.active){
+        // set loading to false every time
+        this.display.loading = false
+        // hide all display elements
+        for (const [key, value] of Object.entries(this.currentStage.display)) {
+          this.display[key] = value
+        }
       }
 
       // if we have a param
@@ -544,7 +551,9 @@ export default {
       if(this.game.stage <= 1){
         this.activatePlayers()
       }
-      this.startRound()
+      if(this.game.round === 0 && this.game.stage === 0){
+        this.startRound()
+      }
     },
 
     inHotSeat: {
@@ -561,6 +570,7 @@ export default {
           this.activatePlayers()
         }
         if(val === 0){
+          this.startRound()
           this.checkEndGame()
         }
       }
@@ -716,6 +726,7 @@ export default {
     },
 
     titlebarClick(){
+      this.display.loading = true
       this[this.currentStage.button.action]()
     },
 

@@ -66,14 +66,18 @@ export default {
 
   computed: {
     characterCount(){
-      return this.maxLength
+      return this.cardQuestion.text.length
     }
   },
 
   watch: {
-    characterCount(value){
-      if(value > this.maxLength){
-        this.$set(this.cardQuestion, 'text', this.cardQuestion.text.substring(0, this.cardQuestion.length))
+    characterCount: {
+      immediate: true,
+      deep: true,
+      handler(value){
+        if(value > this.maxLength){
+          this.$set(this.cardQuestion, 'text', this.cardQuestion.text.substring(0, this.maxLength))
+        }
       }
     }
   },

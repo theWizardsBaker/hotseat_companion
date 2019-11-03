@@ -80,16 +80,18 @@ io.on('connection', function (socket){
       // if spectator
       if(data.spectate){
         let room = rooms[data.gameKey];
+        let userData = {
+          userId: 'spectator_' + room.length,
+          gameKey: data.gameKey,
+          name: 'spectator_' + room.length,
+          spectator: true
+        }
         // notify game room
-        socket.to(data.gameKey).emit('player_spectating');
+        socket.to(data.gameKey).emit('player_spectate', userData);
         // notify user
         callback({
           error: false,
-          data: {
-            userId: 'spectator_' + room.length,
-            gameKey: data.gameKey,
-            name: 'spectator_' + room.length,
-          }
+          data: userData
         });
       } else {
         // create unique user id
