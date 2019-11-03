@@ -181,19 +181,20 @@ export default new Vuex.Store({
                 playerScores[pick.userId] = 2
               }
             })
-          } else {
-            // otherwise we're on a player's answer
-            // give that player 1 point for every pick
-            if(playerScores.hasOwnProperty(answer.player.userId)){
-              playerScores[answer.player.userId] += answer.picks.length
-            } else {
-              playerScores[answer.player.userId] = answer.picks.length
-            }
-            // award extra points
-            if(!!answer.extraPoints){
-              playerScores[answer.player.userId] += 2
-            }
           }
+
+          // otherwise we're on a player's answer
+          // give that player 1 point for every pick
+          if(playerScores.hasOwnProperty(answer.player.userId)){
+            playerScores[answer.player.userId] += answer.picks.length
+          } else {
+            playerScores[answer.player.userId] = answer.picks.length
+          }
+          // award extra points
+          if(!!answer.extraPoints){
+            playerScores[answer.player.userId] += 2
+          }
+          
         }
       })
 
