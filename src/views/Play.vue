@@ -180,6 +180,12 @@
                   <h3 class="title is-4 has-text-centered" v-show="display.answer">
                     Answers
                   </h3>
+                  <br/>
+                  <h4 class="subtitle is-5 has-text-centered"
+                      v-if="display.answer && !player.spectator && !display.selectAnswers"
+                      >
+                    Write your answer below
+                  </h4>
                   <!-- answer to write -->
                   <answer :name="player.name"
                           v-if="display.answer && !player.spectator"
@@ -221,12 +227,21 @@
                              :revealAuthors="display.revealAuthors"
                              :revealPicks="display.revealPicks"
                              :newRound="game.round"
-                             @selected="submitSelectedAnswer"
+                             @selected="selectedAnswer"
                              @duplicate="markDuplicate"
                              @correct="correctChoice"
                              @extraPoints="extraPoints"
                              v-if="display.selectAnswers || (display.adjudicateAnswers && inHotSeat)|| display.revealAuthors || display.revealPicks"
                              />
+
+                    <div class="has-text-centered">
+                      <button class="button is-success is-medium"
+                              @click="sendSelectedAnswer"
+                              :disabled="!display.submitAnswer"
+                              v-if="display.selectAnswers && !inHotSeat">
+                        Submit Selected Answer
+                      </button>
+                    </div>
                   </div>
 
                 </div>
@@ -346,7 +361,9 @@ export default {
         score: false,
         endgame: false,
         correctAnswer: false,
-        loading: false
+        loading: false,
+
+        submitAnswer: false
       },
 
       popup: {
@@ -365,6 +382,10 @@ export default {
         round: 0,
 
         stage: 0,
+
+        selectedAnswer: {},
+
+        answerSelected: false,
 
         stages: [
           {
@@ -426,6 +447,7 @@ export default {
               answers: false,
               selectAnswers: true,
               adjudicateAnswers: false,
+              submitAnswer: true,
             },
           },
           {
@@ -804,12 +826,23 @@ export default {
       this.$set(answer, 'extraPoints', !extraPoints)
     },
 
-    submitSelectedAnswer(answer){
-      this.$socket.client.emit('select_answer', {
-        gameKey: this.gameKey,
-        answer: answer,
-        player: this.playerInfo
-      })
+    selectedAnswer(answer){
+      this.game.selectedAnswer = answer
+    },
+
+    sendSelectedAnswer(){
+      // if(Object.entries(this.game.selectedAnswer).length !== 0){
+      if(this.display.submitAnswer === true && Object.entries(this.game.selectedAnswer).length !== 0){
+        // send answer
+        this.$socket.client.emit('select_answer', {
+          gameKey: this.gameKey,
+          answer: this.game.selectedAnswer,
+          player: this.playerInfo
+        })
+        // reset selected answer
+        this.game.selectedAnswer = {}
+        this.display.submitAnswer = false
+      }
     },
 
     submitAnswer(answerText){
