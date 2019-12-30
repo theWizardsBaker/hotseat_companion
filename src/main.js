@@ -5,24 +5,22 @@ import store from './store'
 import io from 'socket.io-client'
 import VueSocketIOExt from 'vue-socket.io-extended'
 import VueNoty from 'vuejs-noty'
-import axios from 'axios'
-import VueAxios from 'vue-axios'
 
 import '@/styles/main.scss'
 
 Vue.config.productionTip = false
 
-const socket = io(`${process.env.VUE_APP_SOCKET_BACKEND}`);
+const socket = io(`${process.env.VUE_APP_SOCKET_BACKEND}`, { 
+  transports: ['websocket', 'polling']
+});
 
 Vue.use(VueSocketIOExt, socket, { store });
 
-Vue.use(VueNoty)
-
-axios.defaults.baseURL = `http://${process.env.VUE_APP_SOCKET_BACKEND}asdlkfasdlasdfl`,
-axios.defaults.headers.common['Content-Type'] = 'application/json'
-axios.defaults.headers.common['Access-Control-Allow-Origin'] = '*'
-
-Vue.use(VueAxios, axios)
+Vue.use(VueNoty,{
+  timeout: 4000,
+  progressBar: true,
+  layout: 'topCenter'
+})
 
 Vue.filter('capitalize', function (value) {
   if (!value) return ''

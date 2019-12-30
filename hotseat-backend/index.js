@@ -13,13 +13,11 @@ const io = require('socket.io')(http, {
   httpCompression: true,
   origins: '*:*',
   pingTimeout: 60000,
+  transports: ['websocket', 'polling']
 });
 // adding for ability to parse json
 const bodyParser = require('body-parser');
 app.use(bodyParser.json());
-// bluebird promise
-const Promise = require('bluebird');
-
 
 
 generateId = () => {
@@ -34,15 +32,6 @@ generateUserId = (name) => {
 
 
 io.on('connection', function (socket){
-
-  socket.on('disconnecting', (data) => {
-
-  });
-
-  // game meta
-  socket.on('disconnect', (data) => {
-
-  });
 
   //
   // GAME FUNCTIONS

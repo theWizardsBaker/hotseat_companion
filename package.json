@@ -12,7 +12,6 @@
     "core-js": "^3.1.2",
     "socket.io-client": "^2.3.0",
     "vue": "^2.6.10",
-    "vue-axios": "^2.1.5",
     "vue-router": "^3.0.6",
     "vue-socket.io-extended": "^4.0.1",
     "vuejs-noty": "^0.1.3",

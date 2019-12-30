@@ -692,11 +692,15 @@ export default {
       })
     },
 
-    // player_joined(){
-    //   if(this.game.stage <= 1){
-    //     this.activatePlayers()
-    //   }
-    // }
+    player_joined(data){
+      // alert("PLAYER JOINED" + data.name)
+      this.$noty.info(`${data.name} joined the game!`)
+    },
+
+    player_quit(data){
+      // alert("PLAYER Quit" + data.name)
+      this.$noty.error(`${data.name} left the game!`)
+    }
 
   },
 
@@ -714,7 +718,6 @@ export default {
 
     setDisplay(){
       if(this.player.active || this.player.spectator){
-        console.log(this.currentStage)
         // set loading to false every time
         this.display.loading = false
         // hide all display elements
@@ -843,9 +846,12 @@ export default {
     },
 
     popupClose(){
-      this.popup.show = false
-      this.popup.showMenu = false
-      this.popup.playerScore = false
+      // this.popup.show = false
+      // this.popup.showMenu = false
+      // this.popup.playerScore = false
+      for(let pop in this.popup){
+        this.popup[pop] = false
+      }
     },
 
     handleOptionClick(action){

@@ -47,7 +47,6 @@ export default new Vuex.Store({
 
     inGame: ({game}) => game.key && game.connected,
 
-    // hotSeatPlayer: ({players}) => players.find(player => player.hotseat),
     hotSeatPlayer: ({game, players}, ) => players.find((player) => player.order === game.hotseat),
 
     inHotSeat: ({user}, {hotSeatPlayer}) => {
@@ -129,8 +128,13 @@ export default new Vuex.Store({
     // the user has quit the game. reset everything
     QUIT_GAME(store, notify) {
       if(notify){
+        let player = store.players.find(player => player.userId === store.user.id)
         // notify server
-        this._vm.$socket.client.emit('quit_game', { gameKey: store.game.key, user: store.user })
+        this._vm.$socket.client.emit('quit_game', { 
+          gameKey: store.game.key, 
+          user: store.user, 
+          name: player.name 
+        })
       }
 
       // reset all
