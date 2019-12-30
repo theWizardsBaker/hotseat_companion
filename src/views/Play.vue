@@ -333,7 +333,9 @@ export default {
     } else {
       // if we're the client, ask the host what the state is
       this.$socket.client.emit('request_game_state', { gameKey: this.gameKey })
-      this.setDisplay()
+      this.delay(200).then(() => {
+        this.setDisplay()
+      })
     }
 
   },
