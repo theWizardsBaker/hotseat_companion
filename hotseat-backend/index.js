@@ -18,14 +18,19 @@ const io = require('socket.io')(http, {
   pingTimeout: 60000,
   transports: ['websocket', 'polling']
 });
+// api fallback for SPA
+const history = require('connect-history-api-fallback');
 // adding for ability to parse json
 const bodyParser = require('body-parser');
 app.use(bodyParser.json());
 if(process.env.NODE_ENV === 'production'){
   // create the static app
-  const staticApp = express.static(path.join(__dirname, 'dist'))
+  const staticApp = express.static(path.join(__dirname, 'dist'));
   // serve the app
-  app.use(staticApp)
+  // app.use(staticApp)
+  app.use(staticApp);
+  app.use(history());
+  app.use(staticApp);
 }
 
 
