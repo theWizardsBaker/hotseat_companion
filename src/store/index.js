@@ -134,40 +134,43 @@ export default new Vuex.Store({
       let playerScores = {}
       // add 'em up
       store.questions[store.questions.length - 1].answers.forEach((answer) => {
-        // if the player guessed the hotseat's answer,
-        // then they are awarded 4 points
-        if(!!answer.correct){
-          // don't need to add because the round only awards points
-          // to those users who guessed correctly
-          playerScores[answer.player.userId] = 4
-          correctGuess.push(answer.player.userId)
-        } else {
-          // if not,
-          // 1 point for every guess
-          // and 2 points for guessing the hotseat's answer 
-          if(hotSeatPlayer.userId === answer.player.userId){
-            // we're looking at the hotseat's player
-            // give 2 points to whoever guessed this correctly
-            answer.picks.forEach((pick) => {
-              if(playerScores.hasOwnProperty(pick.userId)){
-                playerScores[pick.userId] += 2
-
-              } else {
-                playerScores[pick.userId] = 2
-              }
-            })
-          }
-
-          // otherwise we're on a player's answer
-          // give that player 1 point for every pick
-          if(playerScores.hasOwnProperty(answer.player.userId)){
-            playerScores[answer.player.userId] += answer.picks.length
+        // if the answer is not a duplicate
+        if(answer.duplicate !== true){
+          // if the player guessed the hotseat's answer,
+          // then they are awarded 4 points
+          if(!!answer.correct){
+            // don't need to add because the round only awards points
+            // to those users who guessed correctly
+            playerScores[answer.player.userId] = 4
+            correctGuess.push(answer.player.userId)
           } else {
-            playerScores[answer.player.userId] = answer.picks.length
-          }
-          // award extra points
-          if(!!answer.extraPoints){
-            playerScores[answer.player.userId] += 2
+            // if not,
+            // 1 point for every guess
+            // and 2 points for guessing the hotseat's answer 
+            if(hotSeatPlayer.userId === answer.player.userId){
+              // we're looking at the hotseat's player
+              // give 2 points to whoever guessed this correctly
+              answer.picks.forEach((pick) => {
+                if(playerScores.hasOwnProperty(pick.userId)){
+                  playerScores[pick.userId] += 2
+
+                } else {
+                  playerScores[pick.userId] = 2
+                }
+              })
+            }
+
+            // otherwise we're on a player's answer
+            // give that player 1 point for every pick
+            if(playerScores.hasOwnProperty(answer.player.userId)){
+              playerScores[answer.player.userId] += answer.picks.length
+            } else {
+              playerScores[answer.player.userId] = answer.picks.length
+            }
+            // award extra points
+            if(!!answer.extraPoints){
+              playerScores[answer.player.userId] += 2
+            }
           }
         }
       })
@@ -222,24 +225,26 @@ export default new Vuex.Store({
     },
 
     SOCKET_ANSWERS_ADJUDICATED(store, data){
-      // shuffle arrays
+      // get the answers
       let answers = store.questions[store.questions.length - 1].answers
+      for (let i = answers.length - 1; i > 0; i -= 1) {
+        // check the correct / duplicate status
+        if(data.correct.includes(answers[i].player.userId)){
+          Vue.set(answers[i], 'correct', true)
+        }
+        if(data.duplicates.includes(answers[i].player.userId)){
+          Vue.set(answers[i], 'duplicate', true)
+        }
+        if(data.extraPoints === answers[i].player.userId){
+          Vue.set(answers[i], 'extraPoints', true)
+        }
+      }
       // shuffle answers
       for (let i = answers.length - 1; i > 0; i -= 1) {
         const j = Math.floor(Math.random() * (i + 1))
         const temp = answers[i]
-        // check the correct / duplicate status
-        if(data.correct.includes(temp.player.userId)){
-          Vue.set(temp, 'correct', true)
-        }
-        if(data.duplicates.includes(temp.player.userId)){
-          Vue.set(temp, 'duplicate', true)
-        }
-        if(data.extraPoints === temp.player.userId){
-          Vue.set(temp, 'extraPoints', true)
-        }
-        answers[i] = answers[j]
-        answers[j] = temp
+        Vue.set(answers, i, answers[j])
+        Vue.set(answers, j, temp)
       }
     },
 
