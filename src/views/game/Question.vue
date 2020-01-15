@@ -103,6 +103,10 @@ export default {
     flex-direction: row-reverse;
     flex-wrap: nowrap;
 
+    textarea.textarea {
+      height: 155px;
+    }
+
     .help {
       text-align: right;
     }

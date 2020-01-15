@@ -8,11 +8,7 @@ export default new Vuex.Store({
 
    	game: {
   	 	key: null,
-   		host: false,
       connected: false,
-      synced: false,
-      stage: 0,
-      round: 0,
       hotseat: 0,
   	},
 
@@ -28,7 +24,6 @@ export default new Vuex.Store({
 
   getters: {
 
-    synced: ({game}) => game.synced,
 
     player: ({players, user}) => players.find(player => player.userId === user.id),
 
@@ -43,8 +38,6 @@ export default new Vuex.Store({
       return (players.filter((player) => !player.spectator )).sort((a, b) => a.order - b.order)
     },
 
-    isHost: ({game}) => game.host,
-
     inGame: ({game}) => game.key && game.connected,
 
     hotSeatPlayer: ({game, players}, ) => players.find((player) => player.order === game.hotseat),
@@ -56,30 +49,33 @@ export default new Vuex.Store({
     currentQuestion: ({questions}) => questions[questions.length - 1],
 
     answers: (state, {currentQuestion}) => {
-      if(currentQuestion){
+      if(currentQuestion && currentQuestion.answers){
         return currentQuestion.answers
       } else {
         return []
       }
     },
 
-    answersRemaining: (state, {currentQuestion, activePlayers}) => {
-      if(currentQuestion && activePlayers){
-        return activePlayers.length - currentQuestion.answers.length
+    // answersRemaining: (state, {currentQuestion, activePlayers}) => {
+    answersRemaining: (state, {answers, activePlayers}) => {
+      if(answers.length > 0 && activePlayers){
+        return activePlayers.length - answers.length
       } else {
-        return 0
+        return 100
       }
     },
 
-    answerPicksRemaining: (state, {currentQuestion, activePlayers}) => {
+    // answerPicksRemaining: (state, {currentQuestion, activePlayers}) => {
+    answerPicksRemaining: (state, {answers, activePlayers}) => {
       let picks = 0
-      if(currentQuestion && activePlayers){
-        currentQuestion.answers.forEach((answer) => {
+      if(answers.length > 0 && activePlayers){
+        answers.forEach((answer) => {
           picks += answer.picks.length
         })
       }
       // ignore the hot seat player
-      return (activePlayers.length - 1) - picks
+      let remaining = (activePlayers.length - 1) - picks
+      return remaining < 0 ? 100 : remaining
     },
 
     gameWinner: (state, {player, activePlayers}) => {
@@ -89,22 +85,14 @@ export default new Vuex.Store({
   },
 
   mutations: {
-    
-    INCREMENT_STAGE(store, data){
-      store.game.stage += data
-    },
 
     START_GAME(store, data) {
       // reset game
       store.game = {
-        host: data.host,
         key: data.player.gameKey,
         score: 0,
-        round: 0,
-        stage: 0,
         hotseat: 0,
         connected: data.connected,
-        synced: data.synced,
       }
       // reset user
       store.user = {
@@ -117,34 +105,13 @@ export default new Vuex.Store({
       store.questions = []
     },
 
-    ACTIVATE_PLAYERS(store){
-      store.players.forEach((player) => {
-        if(!player.spectator){
-          player.active = true
-        }
-      })
-    },
 
     // the user has quit the game. reset everything
     QUIT_GAME(store, notify) {
-      if(notify){
-        let player = store.players.find(player => player.userId === store.user.id)
-        // notify server
-        this._vm.$socket.client.emit('quit_game', { 
-          gameKey: store.game.key, 
-          user: store.user, 
-          name: player.name 
-        })
-      }
-
       // reset all
       store.game = {
         key: null,
-        host: false,
         connected: false,
-        synced: false,
-        stage: 0,
-        round: 0,
         hotseat: 0,
       }
 
@@ -156,6 +123,10 @@ export default new Vuex.Store({
       store.players = []
 
       store.questions = []
+    },
+
+    END_GAME(){
+
     },
 
     COMPUTE_SCORES(store, hotSeatPlayer){
@@ -198,7 +169,6 @@ export default new Vuex.Store({
           if(!!answer.extraPoints){
             playerScores[answer.player.userId] += 2
           }
-          
         }
       })
 
@@ -212,6 +182,17 @@ export default new Vuex.Store({
         }
         Vue.set(player, 'score', player.score + score)
         Vue.set(player, 'scoreChange', score)
+
+      })
+    },
+
+    UPDATE_SCORES(store, players){
+      store.players.forEach((player) => {
+        let playerScore = players.find(p => p.userId === player.userId)
+        if(playerScore){
+          Vue.set(player, 'score', playerScore.score)
+          Vue.set(player, 'scoreChange', playerScore.scoreChange)
+        }
       })
     },
 
@@ -220,10 +201,24 @@ export default new Vuex.Store({
     // SOCKETS
     //
 
+    SOCKET_PLAYER_ACTIVATE(store){
+      store.players.forEach((player) => {
+        if(!player.spectator){
+          player.active = true
+        }
+      })
+    },
+
     SOCKET_REORDER_PLAYERS(store, data){
       store.players.forEach((player) => {
         player.order = data.playerOrder[player.userId]
       })
+    },
+
+    // a new question has been added
+    SOCKET_QUESTION_ADDED(store, data){
+      data.question.answers = []
+      store.questions.push(data.question)
     },
 
     SOCKET_ANSWERS_ADJUDICATED(store, data){
@@ -269,87 +264,46 @@ export default new Vuex.Store({
     },
 
     // a new question has been added
-    SOCKET_ANSWER_ADDED(store, answer){
-      answer.picks = []
-      store.questions[store.questions.length - 1].answers.push(answer)
-    },
-
-    // a new question has been added
-    SOCKET_QUESTION_ADDED(store, question){
-      question.answers = []
-      store.questions.push(question)
+    SOCKET_ANSWER_ADDED(store, data){
+      data.answer.picks = []
+      store.questions[store.questions.length - 1].answers.push(data.answer)
     },
 
     PLAYER_JOINED(store, player) {
-      // set player defaults
-      Vue.set(player, 'order', store.players.length)
-      Vue.set(player, 'score', 0)
-      Vue.set(player, 'hotseat', false)
-      Vue.set(player, 'active', false)
-      Vue.set(player, 'spectator', player.spectator || false)
-      // add new player
       store.players.push(player)
-
-    },
-
-    SOCKET_SEND_GAME_STATE({game, questions, players}, data){
-      if(game.host){
-        this._vm.$socket.client.emit('game_state', {
-          questions: questions,
-          players: players,
-          stage: game.stage,
-          round: game.round,
-          gameKey: game.key,
-        });
-      }
     },
 
     SOCKET_GAME_STATE(store, data){
-      if(!store.game.host){
-        store.players = data.players
-        store.questions = data.questions
-        store.game.stage = data.stage
-        store.game.round = data.round
-        store.game.synced = true
-      }
+      console.log(data)
+      Vue.set(store.game, 'hotseat', data.hotseat)
+      Vue.set(store, 'players', data.players)
+      Vue.set(store, 'questions', data.questions)
     },
 
-    // another player is active this round
-    SOCKET_PLAYER_ACTIVATE({players, game}, user) {
-      let player = players.find( player => player.id === user.id )
-      player.active = true
-    },
-
-    SOCKET_NEW_ROUND(store) {
-      store.game.round++
-      store.game.stage = 0
-      store.game.hotseat++
-      let players = store.players.filter(player => !player.spectator)
-      // roll the hotseat around
-      if(store.game.hotseat >= players.length){
-        store.game.hotseat = 0
-      }
+    SOCKET_NEW_ROUND(store, data) {
+      store.game.hotseat = data.hotseat
     },
 
     // remove quitter
     SOCKET_PLAYER_QUIT(store, data) {
       let index = 0
+      let indexFound = false
       store.players.forEach( (player, ind) => {
-        if(player.userId === data.user.id){
+        // reorder the players after the one that left
+        if(indexFound){
+          player.order = player.order -1
+        }
+        if(player.userId === data.user){
           index = ind
+          indexFound = true
         }
       })
       // remove player
       Vue.delete(store.players, index)
-
-      if(store.players.length > 0){
-        // set new host
-        if(store.players[0].userId === store.user.id){
-          store.game.host = true
-        }
-      }
-
-      if(store.players.length >= store.game.hotseat){
+      // change hotseat to be the length of the players (if we removed the last player _and_ they were in the hotseat)
+      // possible we need to filter out the spectators. not sure
+      let players = store.players.filter(player => !player.spectator)
+      if(players.length >= store.game.hotseat){
         store.game.hotseat = store.players.length - 1
       }
 
@@ -360,20 +314,16 @@ export default new Vuex.Store({
   actions: {
 
     newGame({commit}, data){
-      commit('START_GAME', { player: data, host: true, connected: true, synced: true })
+      commit('START_GAME', { player: data, connected: true })
       commit('PLAYER_JOINED', data)
     },
 
     joinGame({commit}, data){
-      commit('START_GAME', { player: data, host: false, connected: true, synced: false })
+      commit('START_GAME', { player: data, connected: true })
     },
 
     activatePlayers({commit}){
       commit('ACTIVATE_PLAYERS')
-    },
-
-    incrementStage({commit}, data){
-      commit('INCREMENT_STAGE', data)
     },
 
     quitGame({commit}){
@@ -381,11 +331,23 @@ export default new Vuex.Store({
     },
 
     endGame({commit}){
-      commit('QUIT_GAME', false)
+      commit('END_GAME', false)
+      commit('QUIT_GAME', true)
     },
 
     computeScores({commit, getters}){
-      commit('COMPUTE_SCORES', getters.hotSeatPlayer)
+      return new Promise((resolve, reject) => {
+      //   setTimeout(() => {
+          commit('COMPUTE_SCORES', getters.hotSeatPlayer)
+          resolve()
+        // }, 1000)
+      })
+    },
+
+    socket_scoreResults({commit, getters}, data){
+      if(!getters.player.active){
+        commit('UPDATE_SCORES', data.players)
+      }
     },
 
     socket_playerJoined({commit}, data){

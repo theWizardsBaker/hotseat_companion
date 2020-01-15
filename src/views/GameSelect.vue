@@ -197,15 +197,11 @@ export default {
           if(response.error){
             this.showError(response.data.message)
           } else {
-
             // add the new elements
             data.userId = response.data.userId
             data.gameKey = response.data.gameKey
             // create the new game
             this.$store.dispatch(option.action === 'create' ? 'newGame' : 'joinGame', data)
-            // if(option.spectate){
-            //   this.$store.dispatch('playerSpectate', data)
-            // }
           }
         })
   		}
@@ -235,8 +231,5 @@ export default {
 	}
 	.spacer {
 		height: 80px;
-	}
-	.hero {
-		min-height: 100vh;
 	}
 </style>

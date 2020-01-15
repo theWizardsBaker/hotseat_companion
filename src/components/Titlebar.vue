@@ -3,10 +3,10 @@
     <div class="navbar-start">
       <!-- navbar items -->
       <div class="navbar-item is-active">
-        <h3 class="title is-marginless is-paddingless is-4 has-text-light">{{title}}</h3>
+        <h3 class="title is-marginless is-paddingless is-5 has-text-light">{{title}}</h3>
       </div>
       <div class="navbar-item">
-        <h3 class="subtitle is-marginless is-paddingless is-5 has-text-light">{{text}}</h3>
+        <h3 class="subtitle is-marginless is-paddingless is-6 has-text-light">{{text}}</h3>
       </div>
     </div>
     <div class="navbar-end">

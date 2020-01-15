@@ -10,6 +10,7 @@ const path = require('path');
 // cross origin requests
 const cors = require('cors');
 app.use(cors({credentials: true, origin: true}))
+const Datastore = require('nedb');
 // socket io
 const io = require('socket.io')(http, {
   allowUpgrades: true,
@@ -37,12 +38,16 @@ if(process.env.NODE_ENV === 'production'){
 generateId = () => {
   let number = Math.random()
   // replace commonly mis-read characters
-  return (number.toString(36).substr(2, 5)).replace("o", "0").replace("i", "1").replace("l", "2").toUpperCase()
+  return (number.toString(36).substr(2, 5)).replace("o", "G").replace("i", "1").replace("l", "2").toUpperCase()
 }
 
 generateUserId = (name) => {
   return name.replace(' ', '_') + '_' + Math.floor( Math.random() * 9000 ) + 1000;
 }
+
+db = new Datastore({ inMemoryOnly: true });
+
+db.ensureIndex({ fieldName: 'gameKey', unique: true }, (err) => { console.log(err); });
 
 
 io.on('connection', function (socket){
@@ -50,23 +55,46 @@ io.on('connection', function (socket){
   //
   // GAME FUNCTIONS
   //
+  //
 
   socket.on('create_game', (data, callback) => {
     // create unique room key
-    let gameKey = generateId()
+    let gameKey = generateId();
     // create unique user id
-    let userId = generateUserId(data.name)
-    // join / create room
-    socket.join(gameKey);
-    // tell user the game's created
-    callback({
-      error: false,
-      data: {
-        userId: userId,
-        gameKey: gameKey,
-        name: data.name,
-        spectator: false
-      }
+    let userId = generateUserId(data.name);
+    db.insert({
+      inGame: false,
+      gameKey: gameKey.toUpperCase(),
+      maxPlayers: data.maxPlayers,
+      round: 0,
+      hotseat: 0,
+      players: [
+        {
+          userId: userId,
+          name: data.name,
+          spectator: false,
+          order: 0,
+          active: true,
+          host: true,
+          score: 0,
+          scoreChange: 0,
+        }
+      ],
+      questions: [],
+      gameEvents: []
+    }, (err, newDoc) => {
+      // join / create room
+      socket.join(gameKey.toUpperCase());
+      // tell user the game's created
+      callback({
+        error: false,
+        data: {
+          userId: userId,
+          gameKey: gameKey.toUpperCase(),
+          name: data.name,
+          spectator: false
+        }
+      });
     });
   });
 
@@ -76,70 +104,161 @@ io.on('connection', function (socket){
     let rooms = io.sockets.adapter.rooms;
     // upper case er'thing
     data.gameKey = data.gameKey.toUpperCase();
-    // if they do
-    if(rooms.hasOwnProperty(data.gameKey)){
-      // join / create room
-      socket.join(data.gameKey);
-      // if spectator
-      if(data.spectate){
-        let room = rooms[data.gameKey];
-        let userData = {
-          userId: 'spectator_' + room.length,
-          gameKey: data.gameKey,
-          name: 'spectator_' + room.length,
-          spectator: true
-        }
-        // notify game room
-        socket.to(data.gameKey).emit('player_spectate', userData);
-        // notify user
-        callback({
-          error: false,
-          data: userData
-        });
-      } else {
-        // create unique user id
-        let userId = generateUserId(data.name)
 
-        // notify room of new player
-        socket.to(data.gameKey).emit('player_joined', {
-          userId: userId,
-          name: data.name,
-          spectator: false
-        });
-
-        // send back to player
-        callback({
-          error: false,
-          data: {
-            userId: userId,
-            gameKey: data.gameKey,
+    db.findOne({
+      gameKey: data.gameKey
+    }, (err, doc) => {
+      // if the game exists
+      if(doc){
+        // join / create room
+        socket.join(data.gameKey);
+        // data
+        let userData = {}
+        // if spectator
+        if(data.spectate){
+          let room = rooms[data.gameKey];
+           userData= {
+            userId: 'spectator_' + room.length,
+            name: 'spectator_' + room.length,
+            spectator: true,
+            order: doc.players.length,
+            active: false,
+            host: false,
+            score: 0,
+            scoreChange: 0
+          }
+        } else {
+          // notify room of new player
+          userData = {
+            userId: generateUserId(data.name),
             name: data.name,
-            spectator: false
+            spectator: false,
+            order: doc.players.length,
+            active: false,
+            host: false,
+            score: 0,
+            scoreChange: 0
+          }
+        }
+
+        // insert user
+        db.update({
+          _id: doc._id
+        }, {
+          $push: {
+            players: userData
+          }
+        }, (err, newDoc) => {
+          // player_joined
+          // notify game room
+          socket.to(data.gameKey).emit(data.spectate ? 'player_spectate' : 'player_joined', userData);
+          // send the gamekey back too
+          userData.gameKey = data.gameKey
+          // notify user
+          callback({
+            error: false,
+            data: userData
+          });
+        });
+
+      } else {
+        // throw the error in the callback
+        callback({
+          error: true,
+          data: {
+            message: 'Game does not exist'
           }
         });
       }
-    } else {
-      // throw the error in the callback
-      callback({
-        error: true,
-        data: {
-          message: 'Game does not exist'
-        }
-      });
-    }
+    });
   });
 
   // coordinate game state
-  socket.on('request_game_state', (data) => {
-    socket.to(data.gameKey).emit('send_game_state')
+  socket.on('request_game_state', (data, callback) => {
+    db.findOne({
+      gameKey: data.gameKey
+    }, (err, doc) => {
+      // if we found it
+      if(doc){
+        // if we've missed messages
+        if(data.sync < doc.gameEvents.length){
+          console.log("SYNC")
+          // go through each one and send them
+          (function looper(i){
+            setTimeout(() => {
+              console.log(doc.gameEvents[i].message)
+              socket.emit(doc.gameEvents[i].message, doc.gameEvents[i].data);
+              if (--i) {
+                looper(i);
+              }
+            }, 400);
+          })(doc.gameEvents.length -  data.sync);
+        }
+
+        callback({
+          success: true,
+        });
+      }
+    });
   })
 
+  // properties of the game
+  socket.on('send_scores', (data, callback) => {
+    db.update({
+      gameKey: data.gameKey
+    },{
+      $set: {
+        players: data.players
+      }
+    }, (err, result) => {
+      // get the current value of the game state
+      io.in(data.gameKey).emit('score_results', { players: data.players })
+      callback({
+        success: true
+      })
+    });
+  })
+
+  // properties of the game
   socket.on('game_state', (data) => {
-    socket.to(data.gameKey).emit('game_state', data)
+    db.findOne({
+      gameKey: data.gameKey
+    }, (err, doc) => {
+      if(doc){
+        // get the current value of the game state
+        socket.emit('game_state', {
+          sync: doc.gameEvents.length,
+          hotseat: doc.hotseat,
+          round: doc.round,
+          players: doc.players,
+          questions: doc.questions
+        })
+      }
+    });
   })
 
-  socket.on('activate_player', (data) => {
-    io.in(data.gameKey).emit('player_activate', data);
+  socket.on('activate_players', (data) => {
+    // insert user
+    db.findOne({
+      gameKey: data.gameKey
+    }, (err, doc) => {
+      if(doc){
+        doc.players.forEach(player => {
+          if(!player.spectator){
+            player.active = true
+          }
+        })
+        db.update({
+          gameKey: data.gameKey.toUpperCase()
+        },{
+          $set: {
+            players: doc.players
+          }
+        }, (err, result) => {
+          io.in(data.gameKey).emit('player_activate', data);
+        });
+      }
+    });
   });
 
   socket.on('reorder_players', (data) => {
@@ -148,44 +267,122 @@ io.on('connection', function (socket){
 
   // quit the game
   socket.on('quit_game', (data) => {
-    socket.to(data.gameKey).emit('player_quit', data);
+    db.update({
+      gameKey: data.gameKey.toUpperCase()
+    },{
+      $pull: {
+        players: {
+          userId: data.user
+        }
+      }
+    },
+    (err, result) => {
+      socket.to(data.gameKey).emit('player_quit', data);
+    });
   });
+
 
   //
   // GAME PLAY
   //
 
+  response = (message, data = {}) => {
+    db.update({
+      gameKey: data.gameKey.toUpperCase()
+    },{
+      $push: {
+        gameEvents: {
+          message: message,
+          data: data
+        }
+      }
+    },
+    (err, doc) => {
+      io.in(data.gameKey).emit(message, data)
+    });
+  }
+
   socket.on('add_question', (data) => {
-    io.in(data.gameKey).emit('question_added', data.question);
+    db.update({
+      gameKey: data.gameKey.toUpperCase()
+    },{
+      $push: {
+        questions: data.question
+      }
+    }, (err, result) => {
+      response('question_added', data);
+    });
   });
 
   socket.on('add_answer', (data) => {
-    io.in(data.gameKey).emit('answer_added', data.answer);
+    //  db.findOne({
+    //   gameKey: data.gameKey
+    // }, (err, doc) => {
+    //   if(doc){
+    //     console.log(doc)
+    //     // update the question
+    //     doc.qustions[doc.round].answers.push(data.answer)
+    //     // update all questions
+    //     db.update({
+    //       gameKey: data.gameKey
+    //     },{
+    //       $set: {
+    //         questions: doc.questions
+    //       }
+    //     }, (err, result) => {
+          response('answer_added', data);
+    //     });
+    //   }
+    // });
   });
 
   socket.on('adjudicate_answers', (data) => {
-    io.in(data.gameKey).emit('answers_adjudicated', data)
+    response('answers_adjudicated', data)
   })
 
   socket.on('reveal_authors', (data) => {
-    io.in(data.gameKey).emit('authors_revealed')
+    response('authors_revealed', data)
   })
 
   socket.on('score_answers', (data) => {
-    io.in(data.gameKey).emit('answers_scored')
+    response('answers_scored', data)
   })
 
   socket.on('advance_round', (data) => {
-    io.in(data.gameKey).emit('new_round')
+    db.findOne({
+      gameKey: data.gameKey
+    }, (err, doc) => {
+      // if we found it
+      if(doc){
+        // find all non-spectating players
+        // we dont' have to find active because they will bcome active the next round
+        let players = doc.players.filter(player => !player.spectator)
+        let newHotseat = doc.hotseat + 1 >= players.length ? 0 : (doc.hotseat + 1)
+        // update
+        db.update({
+          gameKey: data.gameKey.toUpperCase()
+        },{
+          $set: {
+            hotseat: newHotseat
+          }
+        },
+        (err, update) => {
+          io.in(data.gameKey).emit('new_round', {
+            hotseat: newHotseat
+          })
+        });
+      }
+    });
   })
 
   socket.on('select_answer', (data) => {
-    io.in(data.gameKey).emit('answer_selected', { answer: data.answer, player: data.player });
+    response('answer_selected', data);
   });
 
 });
 
 
-http.listen(8088, '127.0.0.1', () => {
+// http.listen(8088, '127.0.0.1', () => {
+http.listen(8088, '0.0.0.0', () => {
     console.log('Listening on port *: 8088');
 });

@@ -11,7 +11,7 @@ import Loading from '@/components/Loading.vue'
 
 export default {
 
-  name: 'App',
+  name: 'HotSeat',
 
   components: {
   	Loading,

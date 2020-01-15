@@ -47,7 +47,7 @@
         </option-menu>
         <!-- confirm quit -->
         <div class="content" v-else-if="popup.confirmQuit">
-          <confirm-box @confirm="quitGame"
+          <confirm-box @confirm="closeGame"
                        @cancel="popup.show = false; popup.confirmQuit = false">
             Are you sure you want to quit?
           </confirm-box>
@@ -305,45 +305,28 @@ export default {
   },
 
   created(){
-
-    window.addEventListener('beforeunload', this.leaving)
-
-    // reset everything
-    this.game.round = 0
-    this.game.stage = 0
-
-    this.display.scoreboard = false
-    this.display.hideQuestion = false
-    this.display.questionHistory = false
-    this.display.answerQuestion = false
-    this.display.revealQuestion = false
-    this.display.answer = false
-    this.display.answers = false
-    this.display.adjudicateAnswers = false
-    this.display.selectAnswers = false
-    this.display.revealAuthors = false
-    this.display.score = false
-    this.display.endgame = false
-    this.display.loading = false
-
-
-    if(this.isHost){
-      // if we're the host, just load
-      this.loaded = true
-    } else {
-      // if we're the client, ask the host what the state is
-      this.$socket.client.emit('request_game_state', { gameKey: this.gameKey })
-      this.delay(200).then(() => {
-        this.setDisplay()
-      })
+    for (const key in this.display) {
+      this.display[key] = false
     }
+    // if we're the client, ask the host what the state is
+    this.$socket.client.emit('game_state', { gameKey: this.gameKey })
+    // get the game status if we come back to the page
+    document.addEventListener("visibilitychange", this.checkGameStatus)
 
+  },
+
+  beforeDestroy(){
+    // remove event listener
+    document.removeEventListener("visibilitychange", this.checkGameStatus)
+    this.quitTheGame();
   },
 
   data () {
     return {
 
       loaded: false,
+
+      sync: 0,
 
       display: {
         scoreboard: false,
@@ -379,7 +362,9 @@ export default {
 
       game: {
 
-        endGameScore: 10,
+        checkStatus: false,
+
+        endGameScore: 20,
 
         round: 0,
 
@@ -539,18 +524,23 @@ export default {
 
   watch: {
 
-    currentStage(){
-      this.setDisplay()
-      // if we have a param
-      // if(!!this.currentStage.scrollTo){
-        // scroll that thing into view
-        // document.getElementById(this.currentStage.scrollTo).scrollIntoView(true)
-        // document.getElementById('app').scrollTop = elm.offsetTop
-        // window.scroll({ top: elm.offsetTop, behavior: 'smooth' })
+    'player.active': {
+      handler(val){
+        if(val === true){
+          this.setDisplay()
+        }
+      }
+    },
 
-        // let elm = document.getElementById(this.currentStage.scrollTo)
-        // elm.scrollIntoView()
+    currentStage(){
+      // set hotseat player
+      // if(this.hotSeatPlayer){
+        this.$socket.client.emit('set_hotseat', {
+          gameKey: this.gameKey,
+          hotseat: this.hotSeatPlayer.order
+        })
       // }
+      this.setDisplay()
     },
 
     loaded: {
@@ -571,10 +561,13 @@ export default {
       }
     },
 
-    players(){
+    allPlayers(){
       if(this.game.stage <= 1){
         this.activatePlayers()
       }
+    },
+
+    players(){
       if(this.game.round === 0 && this.game.stage === 0){
         this.startRound()
       }
@@ -590,11 +583,10 @@ export default {
     'game.stage': {
       immediate: true,
       handler(val){
-        if(val <= 1){
-          this.activatePlayers()
-        }
+        // if(val <= 1){
+        //   this.activatePlayers()
+        // }
         if(val === 0){
-          // this.startRound()
           this.checkEndGame()
         }
       }
@@ -609,15 +601,6 @@ export default {
     answerPicksRemaining(val){
       if(val === 0 && this.currentStage.name === 'vote'){
         this.advanceStage()
-      }
-    },
-
-    synced: {
-      immediate: true,
-      handler(val, val2){
-        if(!this.loaded && val){
-          this.loaded = val
-        }
       }
     },
 
@@ -639,8 +622,6 @@ export default {
     }),
 
     ...mapGetters({
-      synced: 'synced',
-      isHost: 'isHost',
       player: 'player',
       answers: 'answers',
       gameKey: 'gameKey',
@@ -676,9 +657,19 @@ export default {
 
   sockets: {
 
+    game_state(data){
+      this.sync = data.sync
+      this.game.round = data.round
+      // this.game.stage = data.stage
+      // set loading to false every time
+      this.display.loading = false
+      this.loaded = true
+    },
+
     question_added(){
-      this.display.revealQuestion = true
+      this.sync += 1
       this.advanceStage()
+      this.display.revealQuestion = true
     },
 
     answers_adjudicated(data){
@@ -695,35 +686,64 @@ export default {
           this.advanceStage()
         }
       })
+      this.sync += 1
+    },
+
+    answer_added(){
+      this.sync += 1
+    },
+
+    answer_selected(){
+      this.sync += 1
     },
 
     authors_revealed(){
       this.advanceStage()
+      this.sync += 1
     },
 
     answers_scored(){
       // tut up
-      this.computeScores()
-      this.delay(1000).then(() => {
-        // first show scores
-        this.advanceStage()
-        // wait a sec
-        // well, not a second, but jsut a figure of speech
-        this.delay(1500).then(() => {
-          // then go to new round
+      // if the player is active
+      if(this.player.active){
+        // compute the scores
+        this.computeScores().then(() => {
           this.advanceStage()
+          // if we're the hotseat user
+          if(this.inHotSeat){
+            // send our scores to the server
+            this.$socket.client.emit('send_scores', {
+              gameKey: this.gameKey,
+              players: this.players
+            }, (callbackData) => {
+              // move to the next round
+              this.$socket.client.emit('advance_round', { gameKey: this.gameKey })
+            })
+          }
+          this.sync += 1
         })
-      })
+      } else {
+        this.advanceStage()
+        this.sync += 1
+      }
     },
 
     player_joined(data){
-      // alert("PLAYER JOINED" + data.name)
       this.$noty.info(`${data.name} joined the game!`)
     },
 
     player_quit(data){
-      // alert("PLAYER Quit" + data.name)
       this.$noty.error(`${data.name} left the game!`)
+      // if they were in the hotseat reset everything
+      if(data.inHotSeat){
+        this.game.stage = 0
+      }
+    },
+
+    new_round(){
+      this.sync += 1
+      // make sure we reset it
+      this.advanceStage(10)
     }
 
   },
@@ -731,28 +751,48 @@ export default {
   methods: {
 
     ...mapActions([
-      'activatePlayers',
-      'incrementRound',
-      'incrementStage',
+      'quitGame',
       'nextHotSeat',
       'computeScores',
-      'quitGame',
       'endGame'
     ]),
 
-    setDisplay(){
-      if(this.player.active || this.player.spectator){
-        // set loading to false every time
-        this.display.loading = false
-        // hide all display elements
-        for (const [key, value] of Object.entries(this.currentStage.display)) {
-          this.display[key] = value
-        }
+    advanceStage(increment = 1){
+      let len = this.game.stages.length
+      if(this.game.stage + increment >= len){
+        this.game.round += 1
+        this.game.stage = 0
+        this.activatePlayers()
+      } else {
+        this.game.stage += increment
       }
     },
 
-    leaving(){
-      this.quitGame()
+    checkGameStatus(){
+      if(!this.game.checkStatus){
+        // say that we're checking the status
+        this.game.checkStatus = true
+        // check it
+        this.$socket.client.emit('request_game_state', {
+          gameKey: this.gameKey,
+          sync: this.game.sync
+        }, () => {
+          setTimeout(() => {
+            this.game.checkStatus = false
+          }, 3000)
+        })
+      }
+    },
+
+    setDisplay(){
+      if(this.player.active || this.player.spectator){
+        // hide all display elements
+        for (const [key, value] of Object.entries(this.currentStage.display)) {
+        // for (const key in this.display) {
+          this.display[key] = value
+        }
+        this.display.loading = false
+      }
     },
 
     startRound(){
@@ -771,6 +811,14 @@ export default {
 
     checkEndGame(){
       this.display.endgame = this.players.some((player) => player.score >= this.game.endGameScore)
+    },
+
+    submitQuestion(question){
+      // set values
+      this.$set(question, 'user', this.playerInfo.name)
+      this.$set(question, 'hotSeatPlayer', this.playerInfo)
+      // send them off
+      this.$socket.client.emit('add_question', { gameKey: this.gameKey, question: question })
     },
 
     scoreAnswers() {
@@ -855,35 +903,12 @@ export default {
       this.$socket.client.emit('add_answer', { gameKey: this.gameKey, answer: answer })
     },
 
-    submitQuestion(question){
-
-      this.$set(question, 'hotSeatPlayer', this.playerInfo)
-
-      this.$socket.client.emit('add_question', { gameKey: this.gameKey, question: question })
-
-    },
 
     reorderPlayers(playerOrder){
       this.$socket.client.emit('reorder_players', { gameKey: this.gameKey, playerOrder: playerOrder })
     },
 
-    advanceStage(increment = 1){
-      let len = this.game.stages.length
-      if(this.game.stage === len - 1){
-        if(this.isHost){
-          this.$socket.client.emit('advance_round', { gameKey: this.gameKey })
-        }
-        this.game.stage = 0
-      } else {
-        this.incrementStage(increment)
-        this.game.stage += increment
-      }
-    },
-
     popupClose(){
-      // this.popup.show = false
-      // this.popup.showMenu = false
-      // this.popup.playerScore = false
       for(let pop in this.popup){
         this.popup[pop] = false
       }
@@ -910,6 +935,29 @@ export default {
       }
 
     },
+
+    activatePlayers(){
+      if(this.inHotSeat){
+        this.$socket.client.emit('activate_players', { gameKey: this.gameKey })
+      }
+    },
+
+    closeGame(){
+      this.$router.replace({
+        name: 'gameselect',
+      })
+    },
+
+    quitTheGame(){
+      // notify server
+      this.$socket.client.emit('quit_game', {
+        gameKey: this.gameKey,
+        user: this.playerInfo.userId,
+        name: this.playerInfo.name,
+        inHotSeat: this.inHotSeat
+      })
+      this.quitGame()
+    }
 
   }
 }
