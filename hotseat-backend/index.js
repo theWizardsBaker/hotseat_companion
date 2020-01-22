@@ -16,8 +16,8 @@ const io = require('socket.io')(http, {
   allowUpgrades: true,
   httpCompression: true,
   origins: '*:*',
-  pingTimeout: 60000,
-  transports: ['websocket', 'polling']
+  pingTimeout: 900000,
+  transports: ['websocket', 'polling'],
 });
 // api fallback for SPA
 const history = require('connect-history-api-fallback');
@@ -49,11 +49,15 @@ db = new Datastore({ inMemoryOnly: true });
 
 db.ensureIndex({ fieldName: 'gameKey', unique: true }, (err) => { console.log(err); });
 
+io.on('connect', (socket) => {
+  console.log(" DEVICE CONNECTED ")
+});
 
-io.on('connection', function (socket){
+io.on('connection', (socket) => {
 
   //
   // GAME FUNCTIONS
+  //
   //
   //
 

@@ -279,7 +279,6 @@ export default new Vuex.Store({
     },
 
     SOCKET_GAME_STATE(store, data){
-      console.log(data)
       Vue.set(store.game, 'hotseat', data.hotseat)
       Vue.set(store, 'players', data.players)
       Vue.set(store, 'questions', data.questions)

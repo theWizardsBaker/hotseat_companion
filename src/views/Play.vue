@@ -769,6 +769,7 @@ export default {
     },
 
     checkGameStatus(){
+      // alert(` connected: ${this.$socket.client.connected} + status: ${this.game.checkStatus}`)
       if(!this.game.checkStatus){
         // say that we're checking the status
         this.game.checkStatus = true
@@ -776,7 +777,7 @@ export default {
         this.$socket.client.emit('request_game_state', {
           gameKey: this.gameKey,
           sync: this.game.sync
-        }, () => {
+        }, (data) => {
           setTimeout(() => {
             this.game.checkStatus = false
           }, 3000)
